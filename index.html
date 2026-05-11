@@ -188,6 +188,43 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
   .desktop-table{display:none !important}
   .mobile-list{display:flex}
 }
+/* ── New: bigger tap targets on phones ── */
+@media (max-width: 768px) {
+  .btn-gs, .form-control, .form-select { min-height: 42px; }
+  .btn-sm-gs { min-height: 36px; }
+}
+/* ── New: recent SKU chips ── */
+.sku-chips { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 10px; }
+.sku-chip { background:var(--green-lt); color:var(--green); border:1px solid #86efac; border-radius:999px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.sku-chip:active { transform:scale(0.96); }
+/* ── New: sticky bottom action bar (mobile sales) ── */
+.sticky-action-bar { position:fixed; left:0; right:0; bottom:var(--bottomnav-h); background:#fff; border-top:1px solid var(--border); padding:10px 14px; display:flex; gap:10px; align-items:center; z-index:850; box-shadow:0 -4px 12px rgba(0,0,0,.06); }
+.sticky-action-bar .total-side { flex:1; font-size:12px; color:var(--muted); }
+.sticky-action-bar .total-side strong { color:var(--green); font-family:'DM Mono',monospace; font-size:14px; display:block; }
+@media (min-width: 769px) { .sticky-action-bar { display:none !important; } }
+/* ── New: receipt modal ── */
+.rcpt-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px; }
+.rcpt-modal { background:#fff; border-radius:14px; width:100%; max-width:380px; max-height:92vh; overflow:auto; }
+.rcpt-paper { font-family:'DM Mono',monospace; font-size:12px; padding:18px 16px; color:#000; background:#fff; }
+.rcpt-paper h3 { font-family:'Sora',sans-serif; text-align:center; font-size:15px; margin-bottom:2px; }
+.rcpt-paper .center { text-align:center; }
+.rcpt-paper .row { display:flex; justify-content:space-between; gap:8px; }
+.rcpt-paper hr { border:none; border-top:1px dashed #999; margin:8px 0; }
+.rcpt-paper table { width:100%; font-size:11px; }
+.rcpt-paper th, .rcpt-paper td { text-align:left; padding:2px 0; vertical-align:top; }
+.rcpt-paper th:last-child, .rcpt-paper td:last-child { text-align:right; }
+@media print {
+  body * { visibility:hidden !important; }
+  .rcpt-print, .rcpt-print * { visibility:visible !important; }
+  .rcpt-print { position:absolute !important; left:0; top:0; width:80mm; padding:4mm; }
+  .rcpt-overlay { background:none !important; position:static !important; padding:0 !important; }
+  .rcpt-modal { box-shadow:none !important; max-width:80mm !important; border-radius:0 !important; }
+  .rcpt-actions { display:none !important; }
+}
+/* ── New: reports tab tables ── */
+.heatmap-grid { display:grid; grid-template-columns:60px repeat(7, 1fr); gap:2px; font-size:10px; }
+.heatmap-cell { padding:6px 2px; text-align:center; border-radius:3px; font-family:'DM Mono',monospace; }
+.heatmap-hdr { font-weight:600; color:var(--muted); padding:4px 2px; text-align:center; }
 </style>
 </head>
 <body>
@@ -270,7 +307,13 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
       </div>
       <div class="mt-3"><button class="btn-gs btn-primary-gs" onclick="addInventory()"><i class="bi bi-plus-lg"></i> Add Item</button></div>
     </div>
-    <div class="c-card"><div class="c-card-title"><i class="bi bi-table"></i> Current Stock</div><div id="inventory-table"></div></div>
+    <div class="c-card">
+      <div class="c-card-title" style="flex-wrap:wrap;gap:8px">
+        <i class="bi bi-table"></i> Current Stock
+        <input type="text" id="inv-search" class="form-control" placeholder="Search by ID or name..." style="margin-left:auto;max-width:200px;font-size:12px;padding:6px 10px;min-width:140px" oninput="renderInventoryTable()">
+      </div>
+      <div id="inventory-table"></div>
+    </div>
   </div>
 
   <!-- SALES -->
@@ -284,6 +327,7 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
           <input type="date" class="form-control" id="sale-date">
         </div>
       </div>
+      <div id="sku-chips" class="sku-chips"></div>
       <div id="sale-items-container"></div>
       <div id="sale-total-bar" style="display:none;margin-top:12px;padding:12px 16px;background:var(--green-lt);border-radius:10px;border:1px solid #86efac">
         <div style="display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center">
@@ -355,12 +399,21 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <select class="form-select" id="an-period" style="width:auto;font-size:13px;padding:7px 12px" onchange="renderPnL()">
           <option value="all">All time</option>
+          <option value="today">Today</option>
+          <option value="last7">Last 7 days</option>
           <option value="thismonth">This month</option>
           <option value="lastmonth">Last month</option>
           <option value="last3">Last 3 months</option>
           <option value="last6">Last 6 months</option>
-          <option value="thisyear">This year</option>
+          <option value="thisyear">This calendar year</option>
+          <option value="thisfy">This financial year (FY)</option>
+          <option value="custom">Custom range…</option>
         </select>
+        <span id="an-custom-range" style="display:none;gap:6px;align-items:center">
+          <input type="date" id="an-from" class="form-control" style="width:auto;font-size:12px;padding:6px 8px" onchange="renderPnL()">
+          <span style="color:var(--muted);font-size:12px">→</span>
+          <input type="date" id="an-to"   class="form-control" style="width:auto;font-size:12px;padding:6px 8px" onchange="renderPnL()">
+        </span>
         <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="exportCSV()"><i class="bi bi-download"></i> Export</button>
       </div>
     </div>
@@ -373,6 +426,12 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
       <button class="btn-gs btn-sm-gs an-tab"        data-tab="suppliers"  onclick="switchAnTab('suppliers',this)"><i class="bi bi-truck-front"></i> Suppliers</button>
       <button class="btn-gs btn-sm-gs an-tab"        data-tab="forecast"   onclick="switchAnTab('forecast',this)"><i class="bi bi-graph-up-arrow"></i> Forecast</button>
       <button class="btn-gs btn-sm-gs an-tab"        data-tab="insights"   onclick="switchAnTab('insights',this)"><i class="bi bi-lightbulb"></i> Insights</button>
+      <button class="btn-gs btn-sm-gs an-tab"        data-tab="reports"    onclick="switchAnTab('reports',this)"><i class="bi bi-file-earmark-bar-graph"></i> Reports</button>
+    </div>
+
+    <!-- REPORTS TAB -->
+    <div id="an-reports" class="an-section" style="display:none">
+      <div id="an-reports-content"></div>
     </div>
 
     <!-- OVERVIEW TAB -->
@@ -580,6 +639,15 @@ function migrateState() {
     state.sales = _flatSalesFromTransactions(state.transactions);
   }
 
+  // Backfill billNo (INV/FY/NNNN) for any transactions missing it, ordered by date
+  const needsBill = state.transactions.filter(t => !t.billNo)
+    .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  needsBill.forEach(t => {
+    const fy = getFY(t.date);
+    const seq = state.transactions.filter(x => x.billNo && x.billNo.indexOf('/'+fy+'/')>0).length + 1;
+    t.billNo = `INV/${fy}/` + String(seq).padStart(4,'0');
+  });
+
   // Fix float IDs that may exist from old confirmRequest/addPurchase bug.
   // Inventory items with float IDs could not be found by onSaleRowItemChange's parseInt.
   // We convert them to integers now and update any sale records that reference them.
@@ -616,12 +684,13 @@ function migrateState() {
   });
 
   // Feature 2: Ensure inventory items have expiry, mrp, createdAt, supplierId, and refillHistory
-  state.inventory.forEach(i => {
+  state.inventory.forEach((i, idx) => {
     if (i.expiry       === undefined) i.expiry       = '';
     if (i.mrp          === undefined) i.mrp          = 0;
     if (!i.createdAt)                 i.createdAt    = new Date().toISOString().slice(0,10);
     if (i.supplierId   === undefined) i.supplierId   = null;  // linked supplier ID
     if (!Array.isArray(i.refillHistory)) i.refillHistory = []; // audit trail
+    if (!i.stockId)                   i.stockId      = 'STK-' + String(idx + 1).padStart(4,'0');
   });
 }
 
@@ -680,6 +749,30 @@ function showConfigBanner() {
 const fmt  = n => '₹' + parseFloat(n||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
 const fmtN = n => parseFloat(n||0).toFixed(2);
 
+// Timezone-safe local date as YYYY-MM-DD (avoids UTC shift on toISOString)
+function todayLocal() { return new Date().toLocaleDateString('en-CA'); }
+
+// Indian financial year (Apr 1 – Mar 31). Returns "2025-26" style string.
+function getFY(dateStr) {
+  const d = dateStr ? new Date(dateStr) : new Date();
+  const y = d.getFullYear(), m = d.getMonth();
+  const startY = m >= 3 ? y : y - 1;
+  return startY + '-' + String((startY+1)%100).padStart(2,'0');
+}
+
+// Generate a sequential bill number per FY: INV/2025-26/0001 (resets every Apr 1)
+function generateBillNo(dateStr) {
+  const fy = getFY(dateStr);
+  const seq = (state.transactions||[]).filter(t => t.billNo && t.billNo.indexOf('/'+fy+'/')>0).length + 1;
+  return `INV/${fy}/` + String(seq).padStart(4,'0');
+}
+
+// Persisted analytics period+range in localStorage
+function getSavedPeriod() {
+  try { return JSON.parse(localStorage.getItem('gsm_period')||'{}'); } catch(e){ return {}; }
+}
+function savePeriod(obj) { try { localStorage.setItem('gsm_period', JSON.stringify(obj)); } catch(e){} }
+
 // ── Rebuild flat sales array from transactions (used by all analytics) ──
 // state.sales is ALWAYS derived from state.transactions — never written directly.
 function _flatSalesFromTransactions(transactions) {
@@ -706,6 +799,15 @@ function _flatSalesFromTransactions(transactions) {
     });
   });
   return flat;
+}
+
+// ── Stock ID generator — STK-NNNN ──
+function _generateStockId() {
+  const maxId = state.inventory.reduce((max, i) => {
+    const n = i.stockId ? parseInt(i.stockId.replace('STK-','')) : 0;
+    return isNaN(n) ? max : Math.max(max, n);
+  }, 0);
+  return 'STK-' + String(maxId + 1).padStart(4,'0');
 }
 
 // ── Transaction ID generator ──
@@ -741,8 +843,19 @@ function toast(msg, type='success') {
 }
 
 document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-document.getElementById('sale-date').value = new Date().toISOString().slice(0,10);
-document.getElementById('sup-date').value  = new Date().toISOString().slice(0,10);
+document.getElementById('sale-date').value = todayLocal();
+document.getElementById('sup-date').value  = todayLocal();
+// Restore saved analytics period+range
+(function(){
+  const sv = getSavedPeriod();
+  const sel = document.getElementById('an-period');
+  if (sel && sv.period) sel.value = sv.period;
+  const f = document.getElementById('an-from'), t = document.getElementById('an-to');
+  if (f && sv.from) f.value = sv.from;
+  if (t && sv.to)   t.value = sv.to;
+  const cr = document.getElementById('an-custom-range');
+  if (cr && sv.period === 'custom') cr.style.display = 'inline-flex';
+})();
 loadState();
 
 // ═══════════════════════════════════════════════════════════════════
@@ -781,6 +894,7 @@ function addInventory() {
       id: Date.now(), name, cat: document.getElementById('inv-cat').value,
       qty, unit: document.getElementById('inv-unit').value,
       cost, sell, mrp, alert, expiry,
+      stockId:    _generateStockId(),
       supplierId: null,
       refillHistory: [],
       createdAt: new Date().toISOString().slice(0,10)
@@ -843,7 +957,9 @@ function openRefillModal(itemId) {
         <button onclick="document.getElementById('refill-modal-overlay').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b">×</button>
       </div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:18px">
-        <strong>${item.name}</strong> · Current stock: <strong>${item.qty} ${item.unit}</strong>
+        <strong>${item.name}</strong>
+        <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-left:6px">${item.stockId||''}</span>
+        · Current stock: <strong>${item.qty} ${item.unit}</strong>
         ${sup?`· Supplier: <strong>${sup.name}</strong>`:''}
       </p>
 
@@ -1220,8 +1336,10 @@ function recordSale() {
   });
 
   // Store ONE grouped transaction
+  const billNo = generateBillNo(date);
   state.transactions.push({
     txnId,
+    billNo,
     date,
     createdAt:    new Date().toISOString(),
     items:        lineItems,
@@ -1237,11 +1355,13 @@ function recordSale() {
 
   save();
   const overrideCount = lineItems.filter(i=>i.priceOverridden).length;
-  let msg = `${txnId} recorded — ${fmt(totalRevenue)}`;
+  let msg = `${billNo} — ${fmt(totalRevenue)}`;
   if (overrideCount > 0) msg += ` (${overrideCount} custom price${overrideCount>1?'s':''})`;
   toast(msg);
   initSaleRows();
   renderAll();
+  // Auto-open receipt for the newly recorded sale
+  setTimeout(()=>openReceipt(txnId), 200);
 }
 
 // Delete an entire transaction by txnId and restore all its stock
@@ -1373,7 +1493,7 @@ function addPurchase() {
     _applyRefill(existing, { qty, cost: unitCost||existing.cost, sell: existing.sell, mrp: existing.mrp, supplierId: supId, notes: `Purchase from ${supName}`, invoice: inv, date });
     toast(`"${item}" restocked (+${qty} ${unit})`);
   } else {
-    state.inventory.push({id:Math.floor(Date.now())+1,name:item,cat:'Other',qty,unit,cost:unitCost,sell:0,mrp:0,alert:5,expiry:'',supplierId:supId,refillHistory:[],createdAt:new Date().toISOString().slice(0,10)});
+    state.inventory.push({id:Math.floor(Date.now())+1,name:item,cat:'Other',qty,unit,cost:unitCost,sell:0,mrp:0,alert:5,expiry:'',stockId:_generateStockId(),supplierId:supId,refillHistory:[],createdAt:new Date().toISOString().slice(0,10)});
     toast(`"${item}" added to inventory — set selling price`);
   }
   state.purchases.push({id:Date.now(),supplierId:supId,supplier:supName,item,qty,unit,cost,invoice:inv,date});
@@ -1405,7 +1525,7 @@ function openEditModal(id) {
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9998;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML=`<div style="background:#fff;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:24px 20px 32px;box-shadow:0 -4px 40px rgba(0,0,0,.2)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <h3 style="font-size:17px;font-weight:700">Edit — ${i.name}</h3>
+      <h3 style="font-size:17px;font-weight:700">Edit — ${i.name} <span style="font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);font-weight:400">${i.stockId||''}</span></h3>
       <button onclick="document.getElementById('edit-modal-overlay').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b">×</button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
@@ -1462,8 +1582,11 @@ function exportCSV() {
 }
 
 function clearAllData() {
-  if(!confirm('Clear ALL data? This cannot be undone.')) return;
-  state={inventory:[],sales:[],purchases:[],suppliers:[]}; save(); toast('All data cleared'); renderAll();
+  if(!confirm('⚠ Clear ALL data?\n\nThis will permanently delete every item, sale, purchase, supplier and request. This cannot be undone.')) return;
+  const typed = prompt('To confirm, type DELETE in capitals:');
+  if (typed !== 'DELETE') { toast('Cancelled — nothing was deleted'); return; }
+  state = { inventory:[], sales:[], purchases:[], suppliers:[], supplierRequests:[], transactions:[] };
+  save(); toast('All data cleared'); renderAll();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1644,11 +1767,24 @@ function renderExpiryAlerts() {
 // ═══════════════════════════════════════════════════════════════════
 function renderInventoryTable() {
   const el = document.getElementById('inventory-table'); if(!el) return;
+
+  // Search filter
+  const searchEl = document.getElementById('inv-search');
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+  const items = q
+    ? state.inventory.filter(i =>
+        (i.stockId||'').toLowerCase().includes(q) ||
+        i.name.toLowerCase().includes(q)
+      )
+    : state.inventory;
+
   if (state.inventory.length===0) { el.innerHTML='<div class="empty-state"><i class="bi bi-boxes"></i>No items added yet. Add your first item above.</div>'; return; }
-  const needsPrice = state.inventory.filter(i=>i.sell<=0);
+  if (items.length===0) { el.innerHTML='<div class="empty-state"><i class="bi bi-search"></i>No items match your search.</div>'; return; }
+
+  const needsPrice = items.filter(i=>i.sell<=0);
   const banner = needsPrice.length > 0
     ? `<div class="alert-low-gs" style="margin-bottom:12px;background:#fef3c7;border-color:#fde68a;color:#92400e"><i class="bi bi-pencil-square"></i><span><strong>${needsPrice.length} item(s) need a selling price</strong> — click Edit or Refill to set it</span></div>` : '';
-  const rows = state.inventory.map(i => {
+  const rows = items.map(i => {
     const margin  = i.sell>0 ? ((i.sell-i.cost)/i.sell*100).toFixed(0) : 0;
     const low     = i.qty <= i.alert;
     const noSell  = i.sell <= 0;
@@ -1662,12 +1798,14 @@ function renderInventoryTable() {
       : '<span style="color:var(--muted);font-size:11px">—</span>';
     const sup = state.suppliers.find(s=>s.id===i.supplierId);
     const supLabel = sup ? sup.name : '<span style="color:var(--muted)">—</span>';
-    return {i,margin,low,noSell,expLabel,expDays,supLabel};
+    const stockId  = i.stockId || '—';
+    return {i,margin,low,noSell,expLabel,expDays,supLabel,stockId};
   });
 
   const desktopHTML = `<div class="gs-table-wrap desktop-table"><table class="gs-table">
-    <thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Supplier</th><th>Cost ₹</th><th>Sell ₹</th><th>MRP ₹</th><th>Margin</th><th>Alert</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead><tbody>`
-    + rows.map(({i,margin,low,noSell,expLabel,expDays,supLabel})=>`<tr style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
+    <thead><tr><th>Stock ID</th><th>Item</th><th>Category</th><th>Stock</th><th>Supplier</th><th>Cost ₹</th><th>Sell ₹</th><th>MRP ₹</th><th>Margin</th><th>Alert</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead><tbody>`
+    + rows.map(({i,margin,low,noSell,expLabel,expDays,supLabel,stockId})=>`<tr style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
+        <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap">${stockId}</td>
         <td style="font-weight:600">${i.name}${noSell?'<span style="margin-left:6px;font-size:11px;color:#d97706">⚠</span>':''}</td>
         <td><span class="badge-gs badge-info">${i.cat}</span></td>
         <td style="font-family:'DM Mono',monospace">${i.qty} ${i.unit}</td>
@@ -1679,16 +1817,21 @@ function renderInventoryTable() {
         <td style="color:var(--muted);font-size:12px">${i.alert} ${i.unit}</td>
         <td>${expLabel}</td>
         <td><span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span></td>
-        <td style="display:flex;gap:5px;flex-wrap:wrap">
-          <button class="btn-gs btn-sm-gs" style="background:#dcfce7;color:#16a34a" onclick="openRefillModal(${i.id})"><i class="bi bi-arrow-repeat"></i> Refill</button>
-          <button class="btn-gs btn-sm-gs" style="background:#e0f2fe;color:#0369a1" onclick="openEditModal(${i.id})"><i class="bi bi-pencil"></i> Edit</button>
-          <button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteItem(${i.id})"><i class="bi bi-trash3"></i></button>
+        <td>
+          <div style="display:flex;gap:5px;flex-wrap:nowrap;align-items:center">
+            <button class="btn-gs btn-sm-gs" style="background:#dcfce7;color:#16a34a;white-space:nowrap" onclick="openRefillModal(${i.id})"><i class="bi bi-arrow-repeat"></i> Refill</button>
+            <button class="btn-gs btn-sm-gs" style="background:#e0f2fe;color:#0369a1;white-space:nowrap" onclick="openEditModal(${i.id})"><i class="bi bi-pencil"></i> Edit</button>
+            <button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteItem(${i.id})"><i class="bi bi-trash3"></i></button>
+          </div>
         </td></tr>`).join('')+'</tbody></table></div>';
 
-  const mobileHTML = '<div class="mobile-list">'+rows.map(({i,margin,low,noSell,expLabel,expDays,supLabel})=>`
+  const mobileHTML = '<div class="mobile-list">'+rows.map(({i,margin,low,noSell,expLabel,expDays,supLabel,stockId})=>`
     <div class="mc" style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
       <div class="mc-top">
-        <span class="mc-name">${i.name}${noSell?'<span style="font-size:10px;color:var(--amber);margin-left:5px">⚠</span>':''}</span>
+        <div>
+          <span class="mc-name">${i.name}${noSell?'<span style="font-size:10px;color:var(--amber);margin-left:5px">⚠</span>':''}</span>
+          <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">${stockId}</div>
+        </div>
         <span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span>
       </div>
       <div class="mc-meta">
@@ -1793,7 +1936,7 @@ function renderSalesTable() {
       <!-- Header row — click to expand -->
       <div style="display:flex;flex-direction:column;gap:6px;padding:12px 16px;cursor:pointer;user-select:none${hasOverride?';background:#fffdf0':''}" onclick="toggleTxnExpand('${txn.txnId}')">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--blue)">${txn.txnId}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--blue)">${txn.billNo || txn.txnId}</span>
           <span class="badge-gs badge-info" style="font-size:10px">${txn.itemCount} item${txn.itemCount!==1?'s':''}</span>
           ${hasOverride?'<span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px"><i class="bi bi-tag-fill"></i> Custom price</span>':''}
           <i class="bi bi-chevron-${isExpanded?'up':'down'}" style="color:var(--muted);font-size:14px;margin-left:auto;flex-shrink:0"></i>
@@ -1804,7 +1947,8 @@ function renderSalesTable() {
           <span style="color:${txn.totalProfit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">Profit: ${fmt(txn.totalProfit)}</span>
         </div>
         <!-- Action buttons row -->
-        <div style="display:flex;gap:8px" onclick="event.stopPropagation()">
+        <div style="display:flex;gap:8px;flex-wrap:wrap" onclick="event.stopPropagation()">
+          <button class="btn-gs btn-primary-gs btn-sm-gs" style="font-size:11px;padding:5px 10px" onclick="openReceipt('${txn.txnId}')"><i class="bi bi-receipt"></i> Receipt</button>
           <button class="btn-gs btn-danger-gs btn-sm-gs" style="font-size:11px;padding:5px 10px" onclick="deleteTransaction('${txn.txnId}')"><i class="bi bi-trash3"></i> Delete</button>
         </div>
       </div>
@@ -1857,19 +2001,40 @@ function sortItemAnalytics(field, btn) {
 }
 
 // ── Period filter: return filtered sales array ──
+// Supports 'custom' range with #an-from / #an-to inputs. Persists choice in localStorage.
 function filteredSales() {
-  const period = (document.getElementById('an-period')||{}).value || 'all';
+  const sel    = document.getElementById('an-period');
+  const period = (sel && sel.value) || 'all';
+  // Toggle custom range UI
+  const cr = document.getElementById('an-custom-range');
+  if (cr) cr.style.display = (period === 'custom') ? 'inline-flex' : 'none';
+  // Persist
+  const fromI = document.getElementById('an-from');
+  const toI   = document.getElementById('an-to');
+  savePeriod({ period, from: fromI?fromI.value:'', to: toI?toI.value:'' });
+
+  if (period === 'custom') {
+    const f = (fromI && fromI.value) || '0000-01-01';
+    const t = (toI   && toI.value)   || '9999-12-31';
+    return state.sales.filter(s => s.date >= f && s.date <= t);
+  }
   const now  = new Date(); now.setHours(0,0,0,0);
   const y = now.getFullYear(), m = now.getMonth();
-  let from = null;
-  if (period === 'thismonth')  from = new Date(y, m, 1);
-  else if (period === 'lastmonth') from = new Date(y, m-1, 1), now.setTime(new Date(y, m, 0).getTime());
+  let from = null, toCap = null;
+  if (period === 'today')      { from = new Date(y, m, now.getDate()); }
+  else if (period === 'last7') { from = new Date(y, m, now.getDate()-6); }
+  else if (period === 'thismonth')  from = new Date(y, m, 1);
+  else if (period === 'lastmonth') { from = new Date(y, m-1, 1); toCap = new Date(y, m, 0); }
   else if (period === 'last3')  from = new Date(y, m-2, 1);
   else if (period === 'last6')  from = new Date(y, m-5, 1);
   else if (period === 'thisyear') from = new Date(y, 0, 1);
+  else if (period === 'thisfy') {
+    const startY = m >= 3 ? y : y - 1;
+    from = new Date(startY, 3, 1);
+  }
   if (!from) return state.sales;
-  const fromStr = from.toISOString().slice(0,10);
-  const toStr   = (period==='lastmonth') ? now.toISOString().slice(0,10) : '9999-12-31';
+  const fromStr = from.toLocaleDateString('en-CA');
+  const toStr   = toCap ? toCap.toLocaleDateString('en-CA') : '9999-12-31';
   return state.sales.filter(s=>s.date>=fromStr && s.date<=toStr);
 }
 
@@ -2771,6 +2936,7 @@ function confirmRequest(reqId) {
         id:        Math.floor(Date.now()) + idx + 1,
         name:      item.name, cat, qty, unit,
         cost:      unitCost, sell: 0, mrp: 0, alert: 5, expiry: '',
+        stockId:   _generateStockId(),
         supplierId: req.supplierId,
         refillHistory: [],
         createdAt: new Date().toISOString().slice(0,10)
@@ -3040,6 +3206,270 @@ document.addEventListener('DOMContentLoaded', function () {
   var clearBtn  = document.getElementById('btn-clear');  if(clearBtn)  clearBtn.addEventListener('click',clearAllData);
   initSaleRows();
 });
+
+// ═══════════════════════════════════════════════════════════════════
+//  RECEIPT — print, share, reprint
+// ═══════════════════════════════════════════════════════════════════
+function _receiptHTML(txn) {
+  const lines = txn.items.map(li => {
+    const name = li.itemName.length > 18 ? li.itemName.slice(0,17)+'…' : li.itemName;
+    return `<tr><td>${name}</td><td>${li.qty}${li.unit==='piece'?'':' '+li.unit}</td><td>${fmt(li.finalSellPrice||li.sell)}</td><td>${fmt(li.revenue)}</td></tr>`;
+  }).join('');
+  const created = txn.createdAt ? new Date(txn.createdAt) : new Date(txn.date);
+  const time = created.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  return `
+    <h3>My Grocery Shop</h3>
+    <div class="center" style="font-size:10px;color:#444;margin-bottom:6px">Tax Invoice / Bill of Sale</div>
+    <hr>
+    <div class="row"><span>Bill No:</span><strong>${txn.billNo||txn.txnId}</strong></div>
+    <div class="row"><span>Date:</span><span>${txn.date}</span></div>
+    <div class="row"><span>Time:</span><span>${time}</span></div>
+    <hr>
+    <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amt</th></tr></thead>
+    <tbody>${lines}</tbody></table>
+    <hr>
+    <div class="row" style="font-size:14px"><strong>TOTAL</strong><strong>${fmt(txn.totalRevenue)}</strong></div>
+    <div class="row" style="font-size:10px;color:#555;margin-top:2px"><span>Items:</span><span>${txn.itemCount}</span></div>
+    <hr>
+    <div class="center" style="font-size:10px;color:#555">Thank you for your purchase!</div>
+    <div class="center" style="font-size:9px;color:#888;margin-top:4px">Saved on ${created.toLocaleDateString('en-IN')}</div>
+  `;
+}
+
+function openReceipt(txnId) {
+  const txn = state.transactions.find(t => t.txnId === txnId);
+  if (!txn) { toast('Transaction not found','error'); return; }
+  const old = document.getElementById('rcpt-overlay'); if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'rcpt-overlay'; overlay.className = 'rcpt-overlay';
+  overlay.innerHTML = `
+    <div class="rcpt-modal">
+      <div class="rcpt-print"><div class="rcpt-paper">${_receiptHTML(txn)}</div></div>
+      <div class="rcpt-actions" style="display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--border);background:var(--surface)">
+        <button class="btn-gs btn-outline-gs btn-sm-gs" style="flex:1" onclick="document.getElementById('rcpt-overlay').remove()"><i class="bi bi-x-lg"></i> Close</button>
+        <button class="btn-gs btn-outline-gs btn-sm-gs" style="flex:1" onclick="shareReceipt('${txnId}')"><i class="bi bi-share"></i> Share</button>
+        <button class="btn-gs btn-primary-gs btn-sm-gs" style="flex:1" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+async function shareReceipt(txnId) {
+  const txn = state.transactions.find(t => t.txnId === txnId);
+  if (!txn) return;
+  const lines = txn.items.map(li => `• ${li.itemName} — ${li.qty}${li.unit==='piece'?'':' '+li.unit} × ${fmt(li.finalSellPrice||li.sell)} = ${fmt(li.revenue)}`).join('\n');
+  const text = `*My Grocery Shop*\nBill: ${txn.billNo||txn.txnId}\nDate: ${txn.date}\n\n${lines}\n\n*TOTAL: ${fmt(txn.totalRevenue)}*\n\nThank you!`;
+  if (navigator.share) {
+    try { await navigator.share({ title: txn.billNo||txn.txnId, text }); }
+    catch(e) { /* user cancelled */ }
+  } else {
+    try { await navigator.clipboard.writeText(text); toast('Receipt copied to clipboard'); }
+    catch(e) { toast('Sharing not supported on this device','error'); }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RECENT SKU CHIPS — quick-pick on Sales page
+// ═══════════════════════════════════════════════════════════════════
+function renderRecentSKUChips() {
+  const host = document.getElementById('sku-chips'); if (!host) return;
+  // top 6 SKUs sold in last 30 days, ordered by frequency
+  const last30 = new Date(); last30.setDate(last30.getDate()-30);
+  const lstr = last30.toLocaleDateString('en-CA');
+  const counts = {};
+  state.sales.filter(s => s.date >= lstr).forEach(s => {
+    if (!counts[s.itemId]) counts[s.itemId] = { id:s.itemId, name:s.itemName, n:0 };
+    counts[s.itemId].n++;
+  });
+  const top = Object.values(counts).sort((a,b)=>b.n-a.n).slice(0,6)
+    .filter(c => state.inventory.find(i=>i.id===c.id && i.qty > 0));
+  if (top.length === 0) { host.innerHTML=''; return; }
+  host.innerHTML = '<div style="font-size:10px;color:var(--muted);width:100%;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Quick-pick recent</div>'
+    + top.map(c => `<button class="sku-chip" onclick="quickPickSKU(${c.id})"><i class="bi bi-plus-lg"></i> ${c.name}</button>`).join('');
+}
+function quickPickSKU(itemId) {
+  // Find first empty row or add a new one
+  let row = saleRows.find(r => !r.itemId);
+  if (!row) { addSaleRow(); row = saleRows[saleRows.length-1]; }
+  row.itemId = itemId;
+  if (!row.qty) row.qty = 1;
+  renderSaleRows(); updateTotalBar(); updateStickyBar();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  STICKY MOBILE ACTION BAR (Sales)
+// ═══════════════════════════════════════════════════════════════════
+function ensureStickyBar() {
+  if (document.getElementById('sticky-sale-bar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'sticky-sale-bar';
+  bar.className = 'sticky-action-bar';
+  bar.style.display = 'none';
+  bar.innerHTML = `
+    <div class="total-side">
+      <span>Total <span id="sk-count">0</span> item(s)</span>
+      <strong id="sk-total">₹0.00</strong>
+    </div>
+    <button class="btn-gs btn-primary-gs" onclick="recordSale()" style="font-weight:600"><i class="bi bi-check2-circle"></i> Record</button>`;
+  document.body.appendChild(bar);
+}
+function updateStickyBar() {
+  ensureStickyBar();
+  const bar = document.getElementById('sticky-sale-bar');
+  const onSales = document.getElementById('page-sales').classList.contains('active');
+  const isMobile = window.innerWidth <= 768;
+  let total = 0, count = 0;
+  saleRows.forEach(r => {
+    if (!r.itemId || !r.qty) return;
+    const item = state.inventory.find(i=>i.id===r.itemId); if (!item) return;
+    total += r.qty * effectiveSellPrice(r, item);
+    count++;
+  });
+  if (onSales && isMobile && count > 0) {
+    bar.style.display = 'flex';
+    document.getElementById('sk-count').textContent = count;
+    document.getElementById('sk-total').textContent = fmt(total);
+  } else {
+    bar.style.display = 'none';
+  }
+}
+window.addEventListener('resize', updateStickyBar);
+
+// Hook: extend renderSaleRows + updateTotalBar to keep sticky bar + chips in sync
+(function(){
+  const _origRender = window.renderSaleRows;
+  if (_origRender) {
+    window.renderSaleRows = function(){ _origRender.apply(this, arguments); renderRecentSKUChips(); updateStickyBar(); };
+  }
+  const _origTotal = window.updateTotalBar;
+  if (_origTotal) {
+    window.updateTotalBar = function(){ _origTotal.apply(this, arguments); updateStickyBar(); };
+  }
+  const _origSwitch = window.switchPage;
+  if (_origSwitch) {
+    window.switchPage = function(id){ _origSwitch.apply(this, arguments); updateStickyBar(); if (id==='sales') renderRecentSKUChips(); };
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+//  REPORTS TAB — top SKUs by margin, category margins, daypart heatmap, slow movers
+// ═══════════════════════════════════════════════════════════════════
+function renderReportsTab(sales) {
+  const host = document.getElementById('an-reports-content'); if (!host) return;
+  if (!sales || sales.length === 0) { host.innerHTML = '<div class="empty-state"><i class="bi bi-bar-chart"></i>No sales in this period</div>'; return; }
+
+  // ── 1) Top SKUs by margin ₹ ──
+  const itemStats = buildItemStats(sales);
+  const byMargin = itemStats.slice().sort((a,b)=>b.profit-a.profit).slice(0,10);
+  const totalMarginRev = itemStats.reduce((s,i)=>s+i.profit, 0) || 1;
+  const topSKUs = `<div class="c-card"><div class="c-card-title"><i class="bi bi-trophy" style="color:var(--green)"></i> Top SKUs by Profit</div>
+    <div class="gs-table-wrap"><table class="gs-table"><thead><tr><th>#</th><th>Item</th><th>Units</th><th>Revenue</th><th>Profit</th><th>Margin %</th><th>Share</th></tr></thead>
+    <tbody>${byMargin.map((i,idx)=>`<tr>
+      <td>${idx+1}</td><td style="font-weight:600">${i.name}</td>
+      <td>${i.qty.toFixed(2)}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--green)">${fmt(i.rev)}</td>
+      <td style="font-family:'DM Mono',monospace;color:${i.profit>=0?'var(--green)':'var(--red)'}">${fmt(i.profit)}</td>
+      <td>${i.margin}%</td>
+      <td style="color:var(--muted)">${((i.profit/totalMarginRev)*100).toFixed(1)}%</td>
+    </tr>`).join('')}</tbody></table></div></div>`;
+
+  // ── 2) Category margin breakdown ──
+  const catMap = {};
+  sales.forEach(s => {
+    const inv = state.inventory.find(i=>i.name===s.itemName);
+    const cat = inv ? inv.cat : 'Other';
+    if (!catMap[cat]) catMap[cat] = { name:cat, rev:0, cost:0, profit:0, units:0 };
+    catMap[cat].rev    += s.revenue;
+    catMap[cat].cost   += (s.cost||0)*s.qty;
+    catMap[cat].profit += s.profit;
+    catMap[cat].units  += s.qty;
+  });
+  const cats = Object.values(catMap).sort((a,b)=>b.profit-a.profit);
+  const catReport = `<div class="c-card"><div class="c-card-title"><i class="bi bi-pie-chart"></i> Category Margin Breakdown</div>
+    <div class="gs-table-wrap"><table class="gs-table"><thead><tr><th>Category</th><th>Revenue</th><th>COGS</th><th>Profit</th><th>Margin %</th></tr></thead>
+    <tbody>${cats.map(c=>`<tr>
+      <td style="font-weight:600">${c.name}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--green)">${fmt(c.rev)}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--red)">${fmt(c.cost)}</td>
+      <td style="font-family:'DM Mono',monospace;color:${c.profit>=0?'var(--green)':'var(--red)'}">${fmt(c.profit)}</td>
+      <td>${c.rev>0?((c.profit/c.rev)*100).toFixed(1):0}%</td>
+    </tr>`).join('')}</tbody></table></div></div>`;
+
+  // ── 3) Daypart × weekday heatmap (revenue) ──
+  // Use transactions in selected date range to access createdAt timestamps.
+  const minD = sales.reduce((m,s)=>!m||s.date<m?s.date:m, null);
+  const maxD = sales.reduce((m,s)=>!m||s.date>m?s.date:m, null);
+  const txns = state.transactions.filter(t => t.date >= minD && t.date <= maxD);
+  const slots = ['6–9','9–12','12–15','15–18','18–21','21–24'];
+  const days  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const grid = slots.map(()=>days.map(()=>0));
+  txns.forEach(t => {
+    const dt = t.createdAt ? new Date(t.createdAt) : new Date(t.date);
+    const h = dt.getHours();
+    let row = -1;
+    if (h>=6 && h<9) row=0; else if (h<12) row=1; else if (h<15) row=2;
+    else if (h<18) row=3; else if (h<21) row=4; else if (h<24) row=5;
+    if (row<0) return;
+    const jsDay = dt.getDay();           // 0=Sun ... 6=Sat
+    const col = (jsDay + 6) % 7;         // 0=Mon ... 6=Sun
+    grid[row][col] += t.totalRevenue;
+  });
+  const maxCell = Math.max(1, ...grid.flat());
+  const heatHTML = `<div class="heatmap-grid">
+    <div></div>${days.map(d=>`<div class="heatmap-hdr">${d}</div>`).join('')}
+    ${slots.map((slot,r)=>`
+      <div class="heatmap-hdr" style="text-align:right;padding-right:6px">${slot}</div>
+      ${days.map((_,c)=>{
+        const v = grid[r][c];
+        const intensity = v / maxCell;
+        const bg = v===0 ? 'var(--surface)' : `rgba(22,163,74,${0.08 + intensity*0.85})`;
+        const col = intensity>0.55 ? '#fff' : 'var(--ink)';
+        return `<div class="heatmap-cell" style="background:${bg};color:${col}" title="${slot} ${days[c]}: ${fmt(v)}">${v>0?Math.round(v):''}</div>`;
+      }).join('')}
+    `).join('')}
+  </div>`;
+  const heatReport = `<div class="c-card"><div class="c-card-title"><i class="bi bi-calendar-week"></i> Sales Heatmap by Daypart × Weekday</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Revenue (₹) per time slot. Darker = busier — useful for staffing &amp; restocking.</div>
+    ${heatHTML}</div>`;
+
+  // ── 4) Slow movers — items with stock but no sales in selected period (or <2 units) ──
+  const soldMap = {};
+  sales.forEach(s => { soldMap[s.itemName] = (soldMap[s.itemName]||0) + s.qty; });
+  const slow = state.inventory
+    .filter(i => i.qty > 0)
+    .map(i => ({ ...i, sold: soldMap[i.name]||0, value: i.qty * i.cost }))
+    .filter(i => i.sold < 2)
+    .sort((a,b)=>b.value-a.value).slice(0,15);
+  const slowReport = `<div class="c-card"><div class="c-card-title"><i class="bi bi-hourglass-split" style="color:var(--amber)"></i> Slow Movers (capital tied up)</div>
+    ${slow.length===0 ? '<div class="empty-state">No slow movers — everything is moving 🎉</div>' :
+    `<div class="gs-table-wrap"><table class="gs-table"><thead><tr><th>Item</th><th>Stock</th><th>Sold (period)</th><th>Stock value</th><th>Days since last sale</th></tr></thead>
+    <tbody>${slow.map(i=>{
+      const lastSale = state.sales.filter(s=>s.itemName===i.name).map(s=>s.date).sort().at(-1);
+      const days = lastSale ? Math.round((Date.now()-new Date(lastSale).getTime())/86400000) : '—';
+      return `<tr>
+        <td style="font-weight:600">${i.name}</td>
+        <td>${i.qty} ${i.unit}</td>
+        <td>${i.sold.toFixed(2)}</td>
+        <td style="font-family:'DM Mono',monospace;color:var(--red)">${fmt(i.value)}</td>
+        <td>${days}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`}</div>`;
+
+  host.innerHTML = topSKUs + catReport + heatReport + slowReport;
+}
+
+// Hook into renderPnL dispatch
+(function(){
+  const _origPnL = window.renderPnL;
+  if (_origPnL) {
+    window.renderPnL = function(){
+      _origPnL.apply(this, arguments);
+      const tab = document.querySelector('.an-tab.active');
+      if (tab && tab.getAttribute('data-tab')==='reports') renderReportsTab(filteredSales());
+    };
+  }
+})();
 </script>
 </body>
 </html>
