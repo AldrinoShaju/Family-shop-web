@@ -82,22 +82,35 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 .toast-msg{background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;animation:slideUp .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.15)}
 .toast-msg.success{background:var(--green)}.toast-msg.error{background:var(--red)}
 @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-
-/* ══════════════════════════════════════
-   MOBILE ADDITIONS ONLY (new)
-   ══════════════════════════════════════ */
+/* expiry alert rows */
+.expiry-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:8px;margin-bottom:6px;font-size:13px}
+.expiry-item:last-child{margin-bottom:0}
+.expiry-expired{background:var(--red-lt);border:1px solid #fca5a5}
+.expiry-soon{background:var(--amber-lt);border:1px solid #fde68a}
+/* purchase request filter buttons */
+.req-filter-btn{background:#fff;color:var(--muted);border:1.5px solid var(--border)}
+.req-filter-btn.active{background:var(--green-lt);color:var(--green);border-color:var(--green)}
+/* request card */
+.req-card{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.req-card-header{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none}
+.req-card-header:hover{background:var(--surface)}
+.req-card-body{border-top:1px solid var(--border);padding:14px 16px}
+.req-item-row{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border)}
+.req-item-row:last-child{border-bottom:none}
+.badge-pending{background:#fef3c7;color:#d97706}
+.badge-completed{background:var(--green-lt);color:var(--green)}
+.badge-cancelled{background:var(--red-lt);color:var(--red)}
+/* MOBILE */
 .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;height:var(--bottomnav-h);background:#fff;border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
 .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;padding:6px 2px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .bnav-item i{font-size:21px;line-height:1}
 .bnav-item.active{color:var(--green)}
-/* Mobile card list (hidden on desktop) */
 .mobile-list{display:none;flex-direction:column;gap:8px}
 .mc{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px}
 .mc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
 .mc-name{font-weight:600;font-size:14px}
 .mc-meta{display:flex;flex-wrap:wrap;gap:3px 12px;font-size:12px;color:var(--muted);margin-bottom:8px}
 .mc-actions{display:flex;gap:7px;flex-wrap:wrap}
-
 @media(max-width:767px){
   .sidebar{display:none !important}
   .bottom-nav{display:flex}
@@ -112,7 +125,6 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
   .form-control,.form-select{font-size:15px;padding:11px 12px}
   .btn-gs{padding:11px 16px;font-size:14px}
   .btn-sm-gs{padding:8px 12px;font-size:13px}
-  /* on mobile: hide desktop tables, show card lists */
   .desktop-table{display:none !important}
   .mobile-list{display:flex}
 }
@@ -136,6 +148,7 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
   <button class="nav-item" data-page="inventory"><i class="bi bi-boxes"></i> Inventory</button>
   <button class="nav-item" data-page="sales"><i class="bi bi-cart-check-fill"></i> Sales</button>
   <button class="nav-item" data-page="suppliers"><i class="bi bi-truck-front-fill"></i> Suppliers</button>
+  <button class="nav-item" data-page="requests"><i class="bi bi-clipboard-check"></i> Purchase Requests</button>
   <div class="sidebar-section-label">Reports</div>
   <button class="nav-item" data-page="pnl"><i class="bi bi-bar-chart-fill"></i> P&amp;L Report</button>
   <div class="sidebar-footer">
@@ -144,17 +157,18 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
   </div>
 </nav>
 
-<!-- BOTTOM NAV — mobile only -->
 <nav class="bottom-nav">
   <button class="bnav-item active" data-page="dashboard"><i class="bi bi-grid-1x2-fill"></i>Home</button>
   <button class="bnav-item" data-page="inventory"><i class="bi bi-boxes"></i>Stock</button>
   <button class="bnav-item" data-page="sales"><i class="bi bi-cart-check-fill"></i>Sales</button>
   <button class="bnav-item" data-page="suppliers"><i class="bi bi-truck-front-fill"></i>Suppliers</button>
+  <button class="bnav-item" data-page="requests"><i class="bi bi-clipboard-check"></i>Requests</button>
   <button class="bnav-item" data-page="pnl"><i class="bi bi-bar-chart-fill"></i>P&amp;L</button>
 </nav>
 
 <main class="main">
 
+  <!-- DASHBOARD -->
   <div id="page-dashboard" class="page active">
     <div class="page-header"><div><h2>Dashboard</h2><p>Your store at a glance</p></div></div>
     <div class="metric-row" id="dash-metrics"></div>
@@ -162,9 +176,20 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
       <div class="col-md-6"><div class="c-card"><div class="c-card-title"><i class="bi bi-receipt"></i> Profit &amp; Loss Summary</div><div id="dash-pnl"></div></div></div>
       <div class="col-md-6"><div class="c-card"><div class="c-card-title"><i class="bi bi-exclamation-triangle"></i> Low Stock Alerts</div><div id="dash-lowstock"></div></div></div>
     </div>
+    <!-- NEW: Expiry Alerts card -->
+    <div class="c-card">
+      <div class="c-card-title"><i class="bi bi-calendar-x"></i> Expiry Alerts</div>
+      <div id="dash-expiry"></div>
+    </div>
     <div class="c-card"><div class="c-card-title"><i class="bi bi-clock-history"></i> Recent Sales</div><div id="dash-recent"></div></div>
+    <!-- Pending purchase requests summary -->
+    <div class="c-card" id="dash-requests-card">
+      <div class="c-card-title"><i class="bi bi-clipboard-check"></i> Pending Purchase Requests <span id="dash-req-badge" style="margin-left:auto"></span></div>
+      <div id="dash-requests"></div>
+    </div>
   </div>
 
+  <!-- INVENTORY -->
   <div id="page-inventory" class="page">
     <div class="page-header"><div><h2>Inventory</h2><p>Manage your stock items</p></div></div>
     <div class="c-card">
@@ -180,31 +205,32 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
         <div class="col-6 col-sm-4 col-md-2"><label class="form-label">Selling price (₹)</label><input type="number" class="form-control" id="inv-sell" placeholder="0.00" step="0.01" inputmode="decimal"></div>
         <div class="col-6 col-sm-4 col-md-2"><label class="form-label">MRP (₹)</label><input type="number" class="form-control" id="inv-mrp" placeholder="0.00" step="0.01" inputmode="decimal"></div>
         <div class="col-6 col-sm-2 col-md-1"><label class="form-label">Alert at</label><input type="number" class="form-control" id="inv-alert" placeholder="5" min="0" inputmode="numeric"></div>
+        <!-- NEW: Expiry date field (optional) -->
+        <div class="col-6 col-sm-4 col-md-3"><label class="form-label">Expiry date <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none">(optional)</span></label><input type="date" class="form-control" id="inv-expiry"></div>
       </div>
       <div class="mt-3"><button class="btn-gs btn-primary-gs" onclick="addInventory()"><i class="bi bi-plus-lg"></i> Add Item</button></div>
     </div>
     <div class="c-card"><div class="c-card-title"><i class="bi bi-table"></i> Current Stock</div><div id="inventory-table"></div></div>
   </div>
 
+  <!-- SALES -->
   <div id="page-sales" class="page">
     <div class="page-header"><div><h2>Sales</h2><p>Record and track daily sales</p></div></div>
     <div class="c-card">
       <div class="c-card-title"><i class="bi bi-cart-plus"></i> New Transaction</div>
-      <!-- Date row -->
       <div class="row g-3 mb-3">
         <div class="col-6 col-md-3">
           <label class="form-label">Transaction date</label>
           <input type="date" class="form-control" id="sale-date">
         </div>
       </div>
-      <!-- Dynamic item rows -->
       <div id="sale-items-container"></div>
-      <!-- Running total -->
       <div id="sale-total-bar" style="display:none;margin-top:12px;padding:12px 16px;background:var(--green-lt);border-radius:10px;border:1px solid #86efac">
         <div style="display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center">
           <span style="font-size:13px;color:var(--muted)">Items: <strong id="st-count" style="color:var(--ink)">0</strong></span>
           <span style="font-size:13px;color:var(--muted)">Total revenue: <strong id="st-revenue" style="color:var(--green);font-family:'DM Mono',monospace">₹0.00</strong></span>
           <span style="font-size:13px;color:var(--muted)">Total profit: <strong id="st-profit" style="font-family:'DM Mono',monospace">₹0.00</strong></span>
+          <span id="st-override-badge" class="badge-gs" style="display:none;background:#fef3c7;color:#d97706;font-size:11px"><i class="bi bi-tag-fill"></i> Custom pricing applied</span>
         </div>
       </div>
       <div class="mt-3">
@@ -214,6 +240,7 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
     <div class="c-card"><div class="c-card-title"><i class="bi bi-journal-text"></i> Sales History</div><div id="sales-table"></div></div>
   </div>
 
+  <!-- SUPPLIERS -->
   <div id="page-suppliers" class="page">
     <div class="page-header">
       <div><h2>Suppliers</h2><p>Manage supplier contacts and track purchases</p></div>
@@ -240,6 +267,23 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
     <div class="c-card"><div class="c-card-title"><i class="bi bi-receipt-cutoff"></i> Purchase Records</div><div id="suppliers-table"></div></div>
   </div>
 
+  <!-- PURCHASE REQUESTS -->
+  <div id="page-requests" class="page">
+    <div class="page-header">
+      <div><h2>Purchase Requests</h2><p>Prepare orders before stock arrives</p></div>
+      <button class="btn-gs btn-primary-gs btn-sm-gs" onclick="openNewRequestModal()"><i class="bi bi-plus-lg"></i> New Request</button>
+    </div>
+    <!-- Filter tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+      <button class="btn-gs btn-sm-gs req-filter-btn active" data-filter="all"    onclick="setReqFilter('all',this)">All</button>
+      <button class="btn-gs btn-sm-gs req-filter-btn"        data-filter="pending"   onclick="setReqFilter('pending',this)">⏳ Pending</button>
+      <button class="btn-gs btn-sm-gs req-filter-btn"        data-filter="completed" onclick="setReqFilter('completed',this)">✓ Completed</button>
+      <button class="btn-gs btn-sm-gs req-filter-btn"        data-filter="cancelled" onclick="setReqFilter('cancelled',this)">✕ Cancelled</button>
+    </div>
+    <div id="requests-list"></div>
+  </div>
+
+  <!-- P&L -->
   <div id="page-pnl" class="page">
     <div class="page-header">
       <div><h2>Profit &amp; Loss Report</h2><p>Full financial breakdown</p></div>
@@ -256,27 +300,109 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 <div id="toast-container"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ── YOUR ORIGINAL APPS SCRIPT CLOUD CODE (unchanged) ──
+// ═══════════════════════════════════════════════════════════════════
+//  CLOUD PERSISTENCE — Google Apps Script
+// ═══════════════════════════════════════════════════════════════════
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9IqTFoN9EEXVjTbEJF7ebkbMyeC3lz0sdkc8Oj5fcRgDnxZYR9ezMrWsglvfIDUzL/exec';
-let state = { inventory: [], sales: [], purchases: [], suppliers: [] };
+let state = { inventory: [], sales: [], purchases: [], suppliers: [], supplierRequests: [] };
 let _saveTimer = null;
 
+// loadState: fetch from Apps Script; migrate old data shapes for backward compat
+// loadState: try cloud first; if that fails (e.g. file:// CORS), fall back to localStorage cache
 async function loadState() {
-  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') { showConfigBanner(); return; }
+  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
+    showConfigBanner(); return;
+  }
   setCloudStatus('loading');
   try {
     const res = await fetch(SCRIPT_URL, { redirect: 'follow' });
     const json = await res.json();
     if (json.ok && json.data) state = json.data;
-    if (!Array.isArray(state.inventory))  state.inventory  = [];
-    if (!Array.isArray(state.sales))      state.sales      = [];
-    if (!Array.isArray(state.purchases))  state.purchases  = [];
-    if (!Array.isArray(state.suppliers))  state.suppliers  = [];
+    migrateState();
+    // keep localStorage in sync as offline/file:// cache
+    try { localStorage.setItem('gsm_cloud_cache', JSON.stringify(state)); } catch(e){}
     setCloudStatus('ok'); renderAll();
-  } catch(e) { setCloudStatus('error'); toast('Could not load data from cloud — check your Script URL', 'error'); }
+  } catch(e) {
+    // Cloud unreachable (CORS from file://, no internet, etc.)
+    // Try localStorage cache before giving up
+    let loaded = false;
+    try {
+      const cached = localStorage.getItem('gsm_cloud_cache') || localStorage.getItem('gsm_data_v2');
+      if (cached) { state = JSON.parse(cached); loaded = true; }
+    } catch(e2){}
+    migrateState();
+    if (loaded) {
+      setCloudStatus('error');
+      // Show a gentle banner instead of a scary toast
+      const ind = document.getElementById('saveIndicator');
+      ind.innerHTML = '<i class="bi bi-wifi-off"></i> Offline — local cache';
+      ind.style.color = 'var(--amber)';
+      ind.classList.add('show');
+      renderAll();
+    } else {
+      setCloudStatus('error');
+      toast('Could not load data. Open via a web server (not file://) or check your Script URL.', 'error');
+      renderAll();
+    }
+  }
+}
+
+// migrateState: called after every load to ensure all arrays exist and
+// old sale records have the required snapshot fields (backward compat).
+// CHANGE: added migration for sales missing sell/cost snapshots (Feature 1)
+// CHANGE: added migration for inventory items missing expiry/mrp fields (Feature 2)
+function migrateState() {
+  if (!Array.isArray(state.inventory))         state.inventory         = [];
+  if (!Array.isArray(state.sales))             state.sales             = [];
+  if (!Array.isArray(state.purchases))         state.purchases         = [];
+  if (!Array.isArray(state.suppliers))         state.suppliers         = [];
+  if (!Array.isArray(state.supplierRequests))  state.supplierRequests  = []; // migration for old data
+
+  // Fix float IDs that may exist from old confirmRequest/addPurchase bug.
+  // Inventory items with float IDs could not be found by onSaleRowItemChange's parseInt.
+  // We convert them to integers now and update any sale records that reference them.
+  const idRemap = {};
+  state.inventory.forEach(item => {
+    if (!Number.isInteger(item.id)) {
+      const newId = Math.floor(item.id);
+      idRemap[item.id] = newId;
+      item.id = newId;
+    }
+  });
+  // Update sale records that reference the old float IDs
+  if (Object.keys(idRemap).length > 0) {
+    state.sales.forEach(s => {
+      if (idRemap[s.itemId] !== undefined) s.itemId = idRemap[s.itemId];
+    });
+  }
+
+  // Feature 1: Ensure every sale record has snapshotted sell & cost prices.
+  // Old records may be missing these fields. We keep them as-is if present;
+  // for old records we derive them from revenue/qty to avoid data loss.
+  state.sales.forEach(s => {
+    // sell snapshot: use stored s.sell if present, else derive from revenue/qty
+    if (s.sell === undefined || s.sell === null) {
+      s.sell = (s.qty && s.qty > 0) ? parseFloat((s.revenue / s.qty).toFixed(4)) : 0;
+    }
+    // cost snapshot: use stored s.cost if present, else derive from profit/qty
+    if (s.cost === undefined || s.cost === null) {
+      s.cost = (s.qty && s.qty > 0) ? parseFloat(((s.revenue - s.profit) / s.qty).toFixed(4)) : 0;
+    }
+    // ensure revenue and profit are numbers (not undefined)
+    if (s.revenue === undefined) s.revenue = parseFloat((s.qty * s.sell).toFixed(2));
+    if (s.profit === undefined)  s.profit  = parseFloat((s.revenue - s.qty * s.cost).toFixed(2));
+  });
+
+  // Feature 2: Ensure inventory items have expiry and mrp fields
+  state.inventory.forEach(i => {
+    if (i.expiry === undefined) i.expiry = '';   // empty string = no expiry set
+    if (i.mrp    === undefined) i.mrp    = 0;
+  });
 }
 
 function save() {
+  // Always write to localStorage immediately — works both online and file://
+  try { localStorage.setItem('gsm_cloud_cache', JSON.stringify(state)); } catch(e){}
   clearTimeout(_saveTimer); setCloudStatus('pending');
   _saveTimer = setTimeout(pushSave, 800);
 }
@@ -286,7 +412,21 @@ async function pushSave() {
   try {
     await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(state) });
     setCloudStatus('ok');
-  } catch(e) { setCloudStatus('error'); toast('Cloud save failed — retrying…', 'error'); setTimeout(pushSave, 4000); }
+  } catch(e) {
+    // no-cors fetch failures are usually CORS/network issues (e.g. file://)
+    // Show offline indicator but don't spam retries
+    const ind = document.getElementById('saveIndicator');
+    ind.innerHTML = '<i class="bi bi-cloud-slash-fill"></i> Saved locally (cloud offline)';
+    ind.style.color = 'var(--amber)';
+    ind.classList.add('show');
+    // Only retry once after 8s — if still failing, stay silent
+    setTimeout(async ()=>{
+      try {
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(state) });
+        setCloudStatus('ok');
+      } catch(e2){ /* stay on local-only mode silently */ }
+    }, 8000);
+  }
 }
 
 function setCloudStatus(status) {
@@ -306,8 +446,26 @@ function showConfigBanner() {
   renderAll();
 }
 
-const fmt = n => '₹' + parseFloat(n||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+// ═══════════════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════════════
+const fmt  = n => '₹' + parseFloat(n||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
 const fmtN = n => parseFloat(n||0).toFixed(2);
+
+// Feature 3 helper: returns days until expiry (+ve = future, -ve = past)
+function daysUntilExpiry(expiryStr) {
+  if (!expiryStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const exp   = new Date(expiryStr); exp.setHours(0,0,0,0);
+  return Math.round((exp - today) / 86400000);
+}
+
+// Feature 2 helper: format expiry for display
+function fmtExpiry(expiryStr) {
+  if (!expiryStr) return '—';
+  const d = new Date(expiryStr);
+  return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+}
 
 function toast(msg, type='success') {
   const el = document.createElement('div'); el.className = `toast-msg ${type}`;
@@ -320,6 +478,9 @@ document.getElementById('sale-date').value = new Date().toISOString().slice(0,10
 document.getElementById('sup-date').value  = new Date().toISOString().slice(0,10);
 loadState();
 
+// ═══════════════════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
 function switchPage(id) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('[data-page]').forEach(b=>b.classList.remove('active'));
@@ -328,45 +489,81 @@ function switchPage(id) {
   renderAll(); window.scrollTo({top:0,behavior:'smooth'});
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  INVENTORY
+//  CHANGE: addInventory now reads inv-expiry field (Feature 2)
+// ═══════════════════════════════════════════════════════════════════
 function addInventory() {
-  const name=document.getElementById('inv-name').value.trim(), qty=parseFloat(document.getElementById('inv-qty').value)||0;
-  const cost=parseFloat(document.getElementById('inv-cost').value)||0, sell=parseFloat(document.getElementById('inv-sell').value)||0;
-  const mrp=parseFloat(document.getElementById('inv-mrp').value)||0;
-  const alert=parseFloat(document.getElementById('inv-alert').value)||5;
+  const name   = document.getElementById('inv-name').value.trim();
+  const qty    = parseFloat(document.getElementById('inv-qty').value)||0;
+  const cost   = parseFloat(document.getElementById('inv-cost').value)||0;
+  const sell   = parseFloat(document.getElementById('inv-sell').value)||0;
+  const mrp    = parseFloat(document.getElementById('inv-mrp').value)||0;
+  const alert  = parseFloat(document.getElementById('inv-alert').value)||5;
+  const expiry = document.getElementById('inv-expiry').value || ''; // optional
   if (!name) { document.getElementById('inv-name').focus(); toast('Please enter an item name','error'); return; }
   const existing = state.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase());
-  if (existing) { existing.qty+=qty; if(cost)existing.cost=cost; if(sell)existing.sell=sell; if(mrp)existing.mrp=mrp; existing.alert=alert; toast(`"${name}" restocked (+${qty} ${existing.unit})`); }
-  else { state.inventory.push({id:Date.now(),name,cat:document.getElementById('inv-cat').value,qty,unit:document.getElementById('inv-unit').value,cost,sell,mrp,alert}); toast(`"${name}" added to inventory`); }
-  save(); ['inv-name','inv-qty','inv-cost','inv-sell','inv-mrp','inv-alert'].forEach(id=>document.getElementById(id).value=''); renderAll();
+  if (existing) {
+    existing.qty += qty;
+    if (cost)   existing.cost   = cost;
+    if (sell)   existing.sell   = sell;
+    if (mrp)    existing.mrp    = mrp;
+    if (expiry) existing.expiry = expiry; // update expiry on restock if provided
+    existing.alert = alert;
+    toast(`"${name}" restocked (+${qty} ${existing.unit})`);
+  } else {
+    state.inventory.push({
+      id: Date.now(), name, cat: document.getElementById('inv-cat').value,
+      qty, unit: document.getElementById('inv-unit').value,
+      cost, sell, mrp, alert, expiry
+    });
+    toast(`"${name}" added to inventory`);
+  }
+  save();
+  ['inv-name','inv-qty','inv-cost','inv-sell','inv-mrp','inv-alert','inv-expiry'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
 }
 
-function updateStock(id,delta) {
-  const item=state.inventory.find(i=>i.id===id); if(!item) return;
-  const nq=item.qty+delta; if(nq<0){toast('Not enough stock!','error');return;}
-  item.qty=nq; save(); renderAll();
+function updateStock(id, delta) {
+  const item = state.inventory.find(i=>i.id===id); if(!item) return;
+  const nq = item.qty + delta;
+  if (nq < 0) { toast('Not enough stock!','error'); return; }
+  item.qty = nq; save(); renderAll();
 }
 
 function deleteItem(id) {
-  if(!confirm('Delete this item from inventory?')) return;
-  state.inventory=state.inventory.filter(i=>i.id!==id); save(); toast('Item deleted'); renderAll();
+  if (!confirm('Delete this item from inventory?')) return;
+  state.inventory = state.inventory.filter(i=>i.id!==id);
+  save(); toast('Item deleted'); renderAll();
 }
 
-// ── MULTI-ITEM TRANSACTION SYSTEM ──
-const DECIMAL_UNITS=['kg','litre'];
-let saleRows = []; // [{rowId, itemId, qty}]
+// ═══════════════════════════════════════════════════════════════════
+//  MULTI-ITEM SALE TRANSACTION
+//  CHANGE (Feature 1): recordSale now snapshots sell and cost price
+//  from inventory AT TIME OF SALE and stores them permanently in
+//  the sale record. These never change even if inventory is edited.
+// ═══════════════════════════════════════════════════════════════════
+const DECIMAL_UNITS = ['kg','litre'];
+let saleRows = [];
 let nextRowId = 1;
 
 function initSaleRows() {
-  saleRows = [];
-  nextRowId = 1;
-  addSaleRow();
-  updateTotalBar();
+  saleRows = []; nextRowId = 1; addSaleRow(); updateTotalBar();
 }
 
 function addSaleRow() {
   const rowId = nextRowId++;
-  saleRows.push({ rowId, itemId: null, qty: 0 });
+  saleRows.push({ rowId, itemId: null, qty: 0, overridePrice: null }); // overridePrice null = use default
   renderSaleRows();
+}
+
+// Helper: get the effective sell price for a row (override takes priority)
+function effectiveSellPrice(row, item) {
+  if (!item) return 0;
+  if (row.overridePrice !== null && row.overridePrice !== '' && !isNaN(row.overridePrice) && row.overridePrice >= 0) {
+    return parseFloat(row.overridePrice);
+  }
+  return item.sell;
 }
 
 function renderSaleRows() {
@@ -375,17 +572,29 @@ function renderSaleRows() {
   container.innerHTML = saleRows.map((row, idx) => {
     const itemOpts = state.inventory.filter(i=>i.qty>0)
       .map(i=>`<option value="${i.id}"${i.id===row.itemId?' selected':''}>${i.name} (${i.qty} ${i.unit}) — ${fmt(i.sell)}</option>`).join('');
-    const item = row.itemId ? state.inventory.find(i=>i.id===row.itemId) : null;
-    const dec = item ? DECIMAL_UNITS.includes(item.unit) : false;
-    const lineTotal = item && row.qty > 0 ? parseFloat((row.qty * item.sell).toFixed(2)) : 0;
-    const canRemove = saleRows.length > 1;
-    return `<div class="sale-row" id="sale-row-${row.rowId}" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+    const item       = row.itemId ? state.inventory.find(i=>i.id===row.itemId) : null;
+    const dec        = item ? DECIMAL_UNITS.includes(item.unit) : false;
+    const finalPrice = effectiveSellPrice(row, item);
+    const isOverride = item && row.overridePrice !== null && row.overridePrice !== '' && parseFloat(row.overridePrice) !== item.sell;
+    const lineTotal  = item && row.qty > 0 ? parseFloat((row.qty * finalPrice).toFixed(2)) : 0;
+    const canRemove  = saleRows.length > 1;
+
+    // Line total chip — shows strike-through original price if overridden
+    const lineTotalHTML = item && row.qty > 0
+      ? `<div style="background:#fff;border:1px solid ${isOverride?'#86efac':' var(--border)'};border-radius:8px;padding:8px 12px;font-size:13px;${isOverride?'background:#f0fdf4;':'' }">
+          <span style="color:var(--muted)">Line total: </span>
+          <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(lineTotal)}</strong>
+          ${isOverride ? `<span style="margin-left:8px;font-size:11px;color:var(--muted);text-decoration:line-through">${fmt(row.qty * item.sell)}</span>` : ''}
+          ${item.mrp?`<span style="margin-left:8px;font-size:11px;color:var(--muted)">MRP: ${fmt(item.mrp)}</span>`:''}
+         </div>`
+      : `<div style="height:38px;display:flex;align-items:center;padding:0 12px;font-size:12px;color:var(--muted)">${item?'Enter quantity':'Select an item'}</div>`;
+
+    return `<div class="sale-row" id="sale-row-${row.rowId}" style="background:${isOverride?'#f0fdf4':'var(--surface)'};border:1px solid ${isOverride?'#86efac':'var(--border)'};border-radius:10px;padding:12px 14px;margin-bottom:8px">
       <div class="row g-2 align-items-start">
-        <div class="col-12 col-md-5">
+        <div class="col-12 col-md-4">
           ${idx===0?'<label class="form-label">Item</label>':''}
           <select class="form-select" onchange="onSaleRowItemChange(${row.rowId}, this.value)">
-            <option value="">Select item...</option>
-            ${itemOpts}
+            <option value="">Select item...</option>${itemOpts}
           </select>
         </div>
         <div class="col-6 col-md-2">
@@ -397,28 +606,30 @@ function renderSaleRows() {
             oninput="onSaleRowQtyChange(${row.rowId}, this.value)">
           ${item?`<div style="font-size:10px;color:var(--muted);margin-top:3px">${dec?'Decimals OK':'Whole numbers only'} (${item.unit})</div>`:''}
         </div>
-        <div class="col-6 col-md-3" style="display:flex;align-items:${idx===0?'flex-end':'center'}">
-          ${idx===0?'<label class="form-label" style="visibility:hidden;display:block;margin-bottom:6px">Line</label>':''}
-          <div style="width:100%">
-            ${item && row.qty > 0
-              ? `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">
-                  <span style="color:var(--muted)">Line total: </span>
-                  <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(lineTotal)}</strong>
-                  ${item.mrp?`<span style="margin-left:8px;font-size:11px;color:var(--muted)">MRP: ${fmt(item.mrp)}</span>`:''}
-                </div>`
-              : `<div style="height:38px;display:flex;align-items:center;padding:0 12px;font-size:12px;color:var(--muted)">${item?'Enter quantity':'Select an item'}</div>`
-            }
-          </div>
+        <div class="col-6 col-md-2">
+          ${idx===0?`<label class="form-label" style="color:var(--amber)">Override price ₹ <span style="font-size:9px;font-weight:400;text-transform:none">(optional)</span></label>`:''}
+          <input type="number" class="form-control"
+            placeholder="${item?fmt(item.sell).replace('₹',''):'—'}"
+            value="${row.overridePrice!==null&&row.overridePrice!==''?row.overridePrice:''}"
+            min="0" step="0.01" inputmode="decimal"
+            style="${isOverride?'border-color:var(--amber);background:#fffbeb;':''}"
+            title="Leave blank to use default price (${item?fmt(item.sell):'—'})"
+            onchange="onSaleRowOverrideChange(${row.rowId}, this.value)"
+            oninput="onSaleRowOverrideChange(${row.rowId}, this.value)"
+            ${!item?'disabled':''}>
+          ${item?`<div style="font-size:10px;color:var(--muted);margin-top:3px">Default: ${fmt(item.sell)}</div>`:''}
         </div>
-        <div class="col-12 col-md-2" style="display:flex;align-items:${idx===0?'flex-end':'center'};gap:6px">
-          ${canRemove?`<button class="btn-gs btn-danger-gs btn-sm-gs" onclick="removeSaleRow(${row.rowId})" title="Remove row"><i class="bi bi-x-lg"></i></button>`:'<div style="width:38px"></div>'}
+        <div class="col-12 col-md-3" style="display:flex;align-items:${idx===0?'flex-end':'center'}">
+          ${idx===0?'<label class="form-label" style="visibility:hidden;display:block;margin-bottom:6px">Total</label>':''}
+          <div style="width:100%">${lineTotalHTML}</div>
+        </div>
+        <div class="col-12 col-md-1" style="display:flex;align-items:${idx===0?'flex-end':'center'};gap:6px">
+          ${canRemove?`<button class="btn-gs btn-danger-gs btn-sm-gs" onclick="removeSaleRow(${row.rowId})"><i class="bi bi-x-lg"></i></button>`:'<div style="width:34px"></div>'}
         </div>
       </div>
     </div>`;
   }).join('');
-
-  // Show "Add another item" button only if the last row has an item selected
-  const lastRow = saleRows[saleRows.length - 1];
+  const lastRow = saleRows[saleRows.length-1];
   if (lastRow && lastRow.itemId) {
     container.innerHTML += `<button class="btn-gs btn-outline-gs btn-sm-gs" style="margin-top:4px" onclick="addSaleRow()"><i class="bi bi-plus-lg"></i> Add another item</button>`;
   }
@@ -427,25 +638,30 @@ function renderSaleRows() {
 
 function onSaleRowItemChange(rowId, val) {
   const row = saleRows.find(r=>r.rowId===rowId); if(!row) return;
-  row.itemId = val ? parseInt(val) : null;
+  // Use Number() not parseInt() — parseInt truncates float IDs (e.g. from old confirmRequest bugs)
+  row.itemId = val ? Number(val) : null;
   row.qty = 0;
+  row.overridePrice = null;
   renderSaleRows();
 }
 
 function onSaleRowQtyChange(rowId, val) {
-  const row = saleRows.find(r=>r.rowId===rowId); if(!row) return;
+  const row  = saleRows.find(r=>r.rowId===rowId); if(!row) return;
   const item = row.itemId ? state.inventory.find(i=>i.id===row.itemId) : null;
-  const dec = item ? DECIMAL_UNITS.includes(item.unit) : false;
-  row.qty = dec ? parseFloat(val)||0 : parseInt(val)||0;
+  const dec  = item ? DECIMAL_UNITS.includes(item.unit) : false;
+  row.qty    = dec ? parseFloat(val)||0 : parseInt(val)||0;
   updateTotalBar();
-  // re-render only the line total part without full re-render (for smooth typing)
+  // update line total chip without full re-render (smooth typing)
   const lineDiv = document.querySelector(`#sale-row-${rowId} .col-md-3 > div`);
   if (lineDiv && item) {
-    const lineTotal = row.qty > 0 ? parseFloat((row.qty * item.sell).toFixed(2)) : 0;
+    const finalPrice = effectiveSellPrice(row, item);
+    const isOverride = row.overridePrice !== null && row.overridePrice !== '' && parseFloat(row.overridePrice) !== item.sell;
+    const lt = row.qty > 0 ? parseFloat((row.qty * finalPrice).toFixed(2)) : 0;
     lineDiv.innerHTML = row.qty > 0
-      ? `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">
+      ? `<div style="background:${isOverride?'#f0fdf4':'#fff'};border:1px solid ${isOverride?'#86efac':'var(--border)'};border-radius:8px;padding:8px 12px;font-size:13px">
           <span style="color:var(--muted)">Line total: </span>
-          <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(lineTotal)}</strong>
+          <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(lt)}</strong>
+          ${isOverride?`<span style="margin-left:8px;font-size:11px;color:var(--muted);text-decoration:line-through">${fmt(row.qty * item.sell)}</span>`:''}
           ${item.mrp?`<span style="margin-left:8px;font-size:11px;color:var(--muted)">MRP: ${fmt(item.mrp)}</span>`:''}
          </div>`
       : `<div style="height:38px;display:flex;align-items:center;padding:0 12px;font-size:12px;color:var(--muted)">Enter quantity</div>`;
@@ -454,92 +670,166 @@ function onSaleRowQtyChange(rowId, val) {
 
 function removeSaleRow(rowId) {
   saleRows = saleRows.filter(r=>r.rowId!==rowId);
-  if (saleRows.length === 0) addSaleRow();
-  else renderSaleRows();
+  if (saleRows.length === 0) addSaleRow(); else renderSaleRows();
+}
+
+function onSaleRowOverrideChange(rowId, val) {
+  const row = saleRows.find(r=>r.rowId===rowId); if(!row) return;
+  const item = row.itemId ? state.inventory.find(i=>i.id===row.itemId) : null;
+  // Empty string = no override (use default); otherwise parse number
+  if (val === '' || val === null || val === undefined) {
+    row.overridePrice = null;
+  } else {
+    const parsed = parseFloat(val);
+    if (isNaN(parsed) || parsed < 0) {
+      row.overridePrice = null; // invalid — fall back to default
+    } else {
+      row.overridePrice = parsed;
+    }
+  }
+  updateTotalBar();
+  // Update override input border live
+  const overrideInput = document.querySelector(`#sale-row-${rowId} input[type="number"]:nth-of-type(2)`);
+  const isOverride = item && row.overridePrice !== null && row.overridePrice !== item.sell;
+  if (overrideInput) {
+    overrideInput.style.borderColor = isOverride ? 'var(--amber)' : '';
+    overrideInput.style.background  = isOverride ? '#fffbeb' : '';
+  }
+  // Also update line total chip
+  const lineDiv = document.querySelector(`#sale-row-${rowId} .col-md-3 > div`);
+  if (lineDiv && item && row.qty > 0) {
+    const finalPrice = effectiveSellPrice(row, item);
+    const lt = parseFloat((row.qty * finalPrice).toFixed(2));
+    lineDiv.innerHTML = `<div style="background:${isOverride?'#f0fdf4':'#fff'};border:1px solid ${isOverride?'#86efac':'var(--border)'};border-radius:8px;padding:8px 12px;font-size:13px">
+        <span style="color:var(--muted)">Line total: </span>
+        <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(lt)}</strong>
+        ${isOverride?`<span style="margin-left:8px;font-size:11px;color:var(--muted);text-decoration:line-through">${fmt(row.qty * item.sell)}</span>`:''}
+        ${item.mrp?`<span style="margin-left:8px;font-size:11px;color:var(--muted)">MRP: ${fmt(item.mrp)}</span>`:''}
+       </div>`;
+  }
 }
 
 function updateTotalBar() {
   const bar = document.getElementById('sale-total-bar'); if(!bar) return;
-  let totalRev = 0, totalProfit = 0, count = 0;
+  let totalRev = 0, totalProfit = 0, count = 0, hasOverride = false;
   saleRows.forEach(row => {
     if (!row.itemId || !row.qty) return;
     const item = state.inventory.find(i=>i.id===row.itemId); if(!item) return;
-    totalRev   += row.qty * item.sell;
-    totalProfit+= row.qty * (item.sell - item.cost);
+    const finalPrice = effectiveSellPrice(row, item);
+    if (row.overridePrice !== null && row.overridePrice !== '' && parseFloat(row.overridePrice) !== item.sell) hasOverride = true;
+    totalRev    += row.qty * finalPrice;
+    totalProfit += row.qty * (finalPrice - item.cost);
     count++;
   });
   if (count === 0) { bar.style.display='none'; return; }
-  bar.style.display='block';
+  bar.style.display = 'block';
   document.getElementById('st-count').textContent = count;
   document.getElementById('st-revenue').textContent = fmt(totalRev);
   const profitEl = document.getElementById('st-profit');
   profitEl.textContent = fmt(totalProfit);
   profitEl.style.color = totalProfit >= 0 ? 'var(--green)' : 'var(--red)';
+  // Show override indicator in total bar
+  const overrideBadge = document.getElementById('st-override-badge');
+  if (overrideBadge) overrideBadge.style.display = hasOverride ? 'inline-flex' : 'none';
 }
 
-function populateSaleDropdown() {
-  // no-op: sale dropdowns are rendered inline in renderSaleRows
-}
-
-function onSaleItemChange() {
-  // no-op: handled by onSaleRowItemChange
-}
-
+// recordSale: snapshots defaultSellPrice (inventory), overrideSellPrice (if set),
+// and finalSellPrice (whichever was actually used). Revenue/profit use finalSellPrice.
+// Inventory item.sell is NEVER modified.
 function recordSale() {
   const date = document.getElementById('sale-date').value;
   if (!date) { toast('Select a date','error'); return; }
-
-  // validate all rows
-  const validRows = saleRows.filter(r => r.itemId && r.qty > 0);
+  const validRows = saleRows.filter(r=>r.itemId && r.qty > 0);
   if (validRows.length === 0) { toast('Add at least one item with quantity','error'); return; }
 
-  const txnId = 'TXN-' + Date.now();
   let errors = [];
-
   validRows.forEach(row => {
     const item = state.inventory.find(i=>i.id===row.itemId);
-    if (!item) return;
+    if (!item) { errors.push('Item not found'); return; }
     const dec = DECIMAL_UNITS.includes(item.unit);
     if (!dec && String(row.qty).includes('.')) { errors.push(`${item.name}: must be whole number`); return; }
     if (item.qty < row.qty) { errors.push(`${item.name}: only ${item.qty} ${item.unit} in stock`); return; }
+    // Validate override price if provided
+    if (row.overridePrice !== null && row.overridePrice !== '') {
+      if (isNaN(row.overridePrice) || row.overridePrice < 0) {
+        errors.push(`${item.name}: invalid override price`); return;
+      }
+      if (row.overridePrice === 0) {
+        // Allow ₹0 sales (free samples, damaged goods) but warn implicitly via profit colour
+      }
+    }
   });
-
   if (errors.length > 0) { toast(errors[0], 'error'); return; }
 
+  const txnId = 'TXN-' + Date.now();
   let totalRevenue = 0;
   validRows.forEach(row => {
     const item = state.inventory.find(i=>i.id===row.itemId);
-    const qty = row.qty;
+    const qty  = row.qty;
+
+    // Three-price snapshot system:
+    const defaultSellPrice   = item.sell;   // inventory price AT TIME OF SALE (snapshot)
+    const costAtSale         = item.cost;   // cost AT TIME OF SALE (snapshot)
+    const hasOverride        = row.overridePrice !== null && row.overridePrice !== '' && parseFloat(row.overridePrice) !== item.sell;
+    const overrideSellPrice  = hasOverride ? parseFloat(row.overridePrice) : null;
+    const finalSellPrice     = hasOverride ? overrideSellPrice : defaultSellPrice;
+
+    // Deduct stock AFTER snapshotting
     item.qty = parseFloat((item.qty - qty).toFixed(4));
-    const revenue = parseFloat((qty * item.sell).toFixed(2));
-    const cost    = parseFloat((qty * item.cost).toFixed(2));
+
+    const revenue = parseFloat((qty * finalSellPrice).toFixed(2));
+    const cost    = parseFloat((qty * costAtSale).toFixed(2));
     totalRevenue += revenue;
+
     state.sales.push({
-      id: Date.now() + Math.random(),
+      id:               Date.now() + Math.random(),
       txnId,
-      itemId: item.id, itemName: item.name,
-      qty, unit: item.unit, sell: item.sell, cost: item.cost,
-      revenue, profit: parseFloat((revenue-cost).toFixed(2)), date
+      itemId:           item.id,
+      itemName:         item.name,
+      qty,
+      unit:             item.unit,
+      // Legacy field kept for backward compat — equals finalSellPrice
+      sell:             finalSellPrice,
+      cost:             costAtSale,
+      revenue,
+      profit:           parseFloat((revenue - cost).toFixed(2)),
+      date,
+      // Extended price audit fields (new)
+      defaultSellPrice,                     // original inventory price
+      overrideSellPrice,                    // null if no override was used
+      finalSellPrice,                       // price actually used
+      priceOverridden:  hasOverride         // boolean flag for easy filtering
     });
   });
 
   save();
-  toast(`Transaction recorded — ${fmt(totalRevenue)} total`);
-  initSaleRows(); // reset form
+  const overrideCount = validRows.filter(r => r.overridePrice !== null && r.overridePrice !== '').length;
+  let msg = `Transaction recorded — ${fmt(totalRevenue)} total`;
+  if (overrideCount > 0) msg += ` (${overrideCount} custom price${overrideCount>1?'s':''})`;
+  toast(msg);
+  initSaleRows();
   renderAll();
 }
 
 function deleteSale(id) {
-  const sale=state.sales.find(s=>s.id===id);
-  if(!sale||!confirm('Delete this sale? Stock will be restored.')) return;
-  const item=state.inventory.find(i=>i.id===sale.itemId); if(item) item.qty+=sale.qty;
-  state.sales=state.sales.filter(s=>s.id!==id); save(); toast('Sale deleted'); renderAll();
+  const sale = state.sales.find(s=>s.id===id);
+  if (!sale || !confirm('Delete this sale? Stock will be restored.')) return;
+  const item = state.inventory.find(i=>i.id===sale.itemId);
+  if (item) item.qty += sale.qty;
+  state.sales = state.sales.filter(s=>s.id!==id);
+  save(); toast('Sale deleted'); renderAll();
 }
 
+function populateSaleDropdown() {} // no-op: handled inline in renderSaleRows
+function onSaleItemChange() {}     // no-op: handled by onSaleRowItemChange
+
+// ═══════════════════════════════════════════════════════════════════
+//  SUPPLIER CONTACTS
+// ═══════════════════════════════════════════════════════════════════
 function openAddSupplierModal(editId) {
-  var old=document.getElementById('sup-modal-overlay'); if(old) old.remove();
-  const s=editId?state.suppliers.find(x=>x.id===editId):null;
-  const overlay=document.createElement('div'); overlay.id='sup-modal-overlay';
+  var old = document.getElementById('sup-modal-overlay'); if(old) old.remove();
+  const s = editId ? state.suppliers.find(x=>x.id===editId) : null;
+  const overlay = document.createElement('div'); overlay.id='sup-modal-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9998;display:flex;align-items:flex-end;justify-content:center';
   overlay.innerHTML=`<div style="background:#fff;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:24px 20px 32px;box-shadow:0 -4px 40px rgba(0,0,0,.2)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
@@ -563,27 +853,28 @@ function openAddSupplierModal(editId) {
 }
 
 function saveSupplier(editId) {
-  const name=document.getElementById('sm-name').value.trim();
-  if(!name){toast('Supplier name is required','error');return;}
-  if(editId) {
-    const s=state.suppliers.find(x=>x.id===editId);
-    if(s){s.name=name;s.person=document.getElementById('sm-person').value.trim();s.phone=document.getElementById('sm-phone').value.trim();s.items=document.getElementById('sm-items').value.trim();s.terms=document.getElementById('sm-terms').value;s.notes=document.getElementById('sm-notes').value.trim();}
+  const name = document.getElementById('sm-name').value.trim();
+  if (!name) { toast('Supplier name is required','error'); return; }
+  if (editId) {
+    const s = state.suppliers.find(x=>x.id===editId);
+    if (s) { s.name=name; s.person=document.getElementById('sm-person').value.trim(); s.phone=document.getElementById('sm-phone').value.trim(); s.items=document.getElementById('sm-items').value.trim(); s.terms=document.getElementById('sm-terms').value; s.notes=document.getElementById('sm-notes').value.trim(); }
     toast('Supplier updated');
   } else {
-    state.suppliers.push({id:Date.now(),name,person:document.getElementById('sm-person').value.trim(),phone:document.getElementById('sm-phone').value.trim(),items:document.getElementById('sm-items').value.trim(),terms:document.getElementById('sm-terms').value,notes:document.getElementById('sm-notes').value.trim()});
+    state.suppliers.push({ id:Date.now(), name, person:document.getElementById('sm-person').value.trim(), phone:document.getElementById('sm-phone').value.trim(), items:document.getElementById('sm-items').value.trim(), terms:document.getElementById('sm-terms').value, notes:document.getElementById('sm-notes').value.trim() });
     toast(`Supplier "${name}" added`);
   }
   document.getElementById('sup-modal-overlay').remove(); save(); renderAll();
 }
 
 function deleteSupplier(id) {
-  if(!confirm('Delete this supplier contact?')) return;
-  state.suppliers=state.suppliers.filter(s=>s.id!==id); save(); toast('Supplier deleted'); renderAll();
+  if (!confirm('Delete this supplier contact?')) return;
+  state.suppliers = state.suppliers.filter(s=>s.id!==id);
+  save(); toast('Supplier deleted'); renderAll();
 }
 
 function populateSupplierDropdown() {
-  const sel=document.getElementById('sup-contact-sel'); if(!sel) return;
-  const cur=sel.value; sel.innerHTML='<option value="">Select supplier...</option>';
+  const sel = document.getElementById('sup-contact-sel'); if(!sel) return;
+  const cur = sel.value; sel.innerHTML='<option value="">Select supplier...</option>';
   state.suppliers.forEach(s=>{
     const o=document.createElement('option'); o.value=s.id;
     o.textContent=s.name+(s.phone?' — '+s.phone:'');
@@ -601,7 +892,7 @@ function onSupplierContactChange() {
 
 function renderSupplierContacts() {
   const el=document.getElementById('supplier-contacts-table'); if(!el) return;
-  if(state.suppliers.length===0){el.innerHTML='<div class="empty-state" style="padding:20px"><i class="bi bi-person-plus"></i><p>No suppliers added yet. Click "Add Supplier" to get started.</p></div>';return;}
+  if(state.suppliers.length===0){el.innerHTML='<div class="empty-state" style="padding:20px"><i class="bi bi-person-plus"></i><p>No suppliers added yet.</p></div>';return;}
   el.innerHTML=`<div class="gs-table-wrap desktop-table"><table class="gs-table"><thead><tr><th>Business name</th><th>Contact person</th><th>Phone</th><th>Items supplied</th><th>Payment terms</th><th>Notes</th><th>Actions</th></tr></thead><tbody>`
     +state.suppliers.map(s=>`<tr><td style="font-weight:600">${s.name}</td><td>${s.person||'—'}</td>
       <td>${s.phone?`<a href="tel:${s.phone}" style="color:var(--green);text-decoration:none"><i class="bi bi-telephone-fill"></i> ${s.phone}</a>`:'—'}</td>
@@ -625,136 +916,49 @@ function renderSupplierContacts() {
 }
 
 function addPurchase() {
-  const supId=parseInt(document.getElementById('sup-contact-sel').value);
-  const supName=supId?(state.suppliers.find(s=>s.id===supId)||{}).name||'':'';
-  const item=document.getElementById('sup-item').value.trim(), qty=parseFloat(document.getElementById('sup-qty').value)||0;
-  const cost=parseFloat(document.getElementById('sup-cost').value)||0, unit=document.getElementById('sup-unit').value;
-  const inv=document.getElementById('sup-inv').value.trim(), date=document.getElementById('sup-date').value;
-  if(!supId){toast('Please select a supplier — add one above if needed','error');return;}
-  if(!item){toast('Enter the item received','error');return;}
-  if(qty<=0){toast('Enter a valid quantity','error');return;}
-  const unitCost=cost>0?parseFloat((cost/qty).toFixed(4)):0;
-  const existing=state.inventory.find(i=>i.name.toLowerCase()===item.toLowerCase());
-  if(existing){existing.qty+=qty;if(unitCost>0)existing.cost=unitCost;toast(`"${item}" restocked in inventory (+${qty} ${unit})`);}
-  else{state.inventory.push({id:Date.now()+1,name:item,cat:'Other',qty,unit,cost:unitCost,sell:0,alert:5});toast(`"${item}" added to inventory — set selling price in Inventory tab`);}
+  const supId   = parseInt(document.getElementById('sup-contact-sel').value);
+  const supName = supId ? (state.suppliers.find(s=>s.id===supId)||{}).name||'' : '';
+  const item    = document.getElementById('sup-item').value.trim();
+  const qty     = parseFloat(document.getElementById('sup-qty').value)||0;
+  const cost    = parseFloat(document.getElementById('sup-cost').value)||0;
+  const unit    = document.getElementById('sup-unit').value;
+  const inv     = document.getElementById('sup-inv').value.trim();
+  const date    = document.getElementById('sup-date').value;
+  if (!supId)      { toast('Please select a supplier','error'); return; }
+  if (!item)       { toast('Enter the item received','error'); return; }
+  if (qty <= 0)    { toast('Enter a valid quantity','error'); return; }
+  const unitCost = cost > 0 ? parseFloat((cost/qty).toFixed(4)) : 0;
+  const existing = state.inventory.find(i=>i.name.toLowerCase()===item.toLowerCase());
+  if (existing) { existing.qty+=qty; if(unitCost>0) existing.cost=unitCost; toast(`"${item}" restocked (+${qty} ${unit})`); }
+  else { state.inventory.push({id:Math.floor(Date.now())+1,name:item,cat:'Other',qty,unit,cost:unitCost,sell:0,mrp:0,alert:5,expiry:''}); toast(`"${item}" added to inventory — set selling price`); }
   state.purchases.push({id:Date.now(),supplierId:supId,supplier:supName,item,qty,unit,cost,invoice:inv,date});
-  save(); ['sup-item','sup-qty','sup-cost','sup-inv'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('sup-date').value=new Date().toISOString().slice(0,10); renderAll();
+  save();
+  ['sup-item','sup-qty','sup-cost','sup-inv'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sup-date').value = new Date().toISOString().slice(0,10);
+  renderAll();
 }
 
 function deletePurchase(id) {
-  const purchase=state.purchases.find(p=>p.id===id);
-  if(!purchase||!confirm('Delete this purchase? Inventory stock will be reduced accordingly.')) return;
-  const invItem=state.inventory.find(i=>i.name.toLowerCase()===purchase.item.toLowerCase());
-  if(invItem) invItem.qty=Math.max(0,invItem.qty-purchase.qty);
-  state.purchases=state.purchases.filter(p=>p.id!==id); save(); toast('Purchase deleted — inventory updated'); renderAll();
+  const purchase = state.purchases.find(p=>p.id===id);
+  if (!purchase || !confirm('Delete this purchase? Inventory stock will be reduced.')) return;
+  const invItem = state.inventory.find(i=>i.name.toLowerCase()===purchase.item.toLowerCase());
+  if (invItem) invItem.qty = Math.max(0, invItem.qty - purchase.qty);
+  state.purchases = state.purchases.filter(p=>p.id!==id);
+  save(); toast('Purchase deleted'); renderAll();
 }
 
-function exportCSV() {
-  const rows=[['Type','Item','Qty','Unit','Revenue','Cost','Profit','Date','Supplier','Invoice']];
-  state.sales.forEach(s=>rows.push(['Sale',s.itemName,s.qty,s.unit,fmtN(s.revenue),fmtN(s.cost),fmtN(s.profit),s.date,'','']));
-  state.purchases.forEach(p=>rows.push(['Purchase',p.item,p.qty,p.unit,'',fmtN(p.cost),'',p.date,p.supplier,p.invoice]));
-  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
-  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download=`store_data_${new Date().toISOString().slice(0,10)}.csv`; a.click(); toast('CSV exported!');
-}
-
-function clearAllData() {
-  if(!confirm('Clear ALL data? This cannot be undone.')) return;
-  state={inventory:[],sales:[],purchases:[],suppliers:[]}; save(); toast('All data cleared'); renderAll();
-}
-
-function renderAll() {
-  renderDashboard(); renderInventoryTable(); renderSalesTable();
-  renderSuppliersTable(); renderSupplierContacts(); renderPnL();
-  populateSupplierDropdown();
-  var supSel=document.getElementById('sup-contact-sel');
-  if(supSel) supSel.onchange=onSupplierContactChange;
-  // refresh sale row dropdowns if sale page is visible
-  if(document.getElementById('page-sales').classList.contains('active')) renderSaleRows();
-}
-
-function renderDashboard() {
-  const totalRevenue=state.sales.reduce((s,x)=>s+x.revenue,0), totalCost=state.sales.reduce((s,x)=>s+x.cost,0);
-  const totalPurchase=state.purchases.reduce((s,x)=>s+x.cost,0), profit=totalRevenue-totalCost;
-  const stockValue=state.inventory.reduce((s,i)=>s+i.qty*i.cost,0);
-  const today=new Date().toISOString().slice(0,10);
-  const todayRev=state.sales.filter(s=>s.date===today).reduce((s,x)=>s+x.revenue,0);
-  const metrics=[
-    {label:"Today's Revenue",value:fmt(todayRev),icon:'bi-sun',color:'#2563eb',bg:'#dbeafe'},
-    {label:'Total Revenue',value:fmt(totalRevenue),icon:'bi-graph-up-arrow',color:'#16a34a',bg:'#dcfce7'},
-    {label:'Gross Profit',value:fmt(profit),icon:'bi-coin',color:profit>=0?'#16a34a':'#dc2626',bg:profit>=0?'#dcfce7':'#fee2e2',cls:profit>=0?'pos':'neg'},
-    {label:'Stock Value',value:fmt(stockValue),icon:'bi-boxes',color:'#d97706',bg:'#fef3c7'},
-    {label:'Items in Stock',value:state.inventory.length,icon:'bi-tags',color:'#7c3aed',bg:'#ede9fe'},
-    {label:'Total Purchases',value:fmt(totalPurchase),icon:'bi-truck-front',color:'#64748b',bg:'#f1f5f9'},
-  ];
-  document.getElementById('dash-metrics').innerHTML=metrics.map(m=>`<div class="metric-card" style="--accent-color:${m.color}"><div class="metric-icon" style="background:${m.bg};color:${m.color}"><i class="bi ${m.icon}"></i></div><div class="metric-label">${m.label}</div><div class="metric-value ${m.cls||''}" style="color:${m.color}">${m.value}</div></div>`).join('');
-  const margin=totalRevenue>0?((profit/totalRevenue)*100).toFixed(1):0;
-  document.getElementById('dash-pnl').innerHTML=`
-    <div class="pnl-row"><span style="color:var(--muted)">Total Revenue</span><span style="color:var(--green);font-weight:600">${fmt(totalRevenue)}</span></div>
-    <div class="pnl-row"><span style="color:var(--muted)">Cost of Goods Sold</span><span style="color:var(--red)">${fmt(totalCost)}</span></div>
-    <div class="pnl-row"><span style="color:var(--muted)">Supplier Purchases</span><span style="color:var(--red)">${fmt(totalPurchase)}</span></div>
-    <div class="pnl-row total"><span>Gross Profit</span><span style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</span></div>
-    <div class="pnl-row"><span style="color:var(--muted)">Profit Margin</span><span>${margin}%</span></div>`;
-  const lowItems=state.inventory.filter(i=>i.qty<=i.alert);
-  document.getElementById('dash-lowstock').innerHTML=lowItems.length===0
-    ?'<p style="color:var(--muted);font-size:13px"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> All items well stocked</p>'
-    :lowItems.map(i=>`<div class="alert-low-gs"><i class="bi bi-exclamation-triangle-fill"></i><strong>${i.name}</strong> — only ${i.qty} ${i.unit} left</div>`).join('');
-  const recent=state.sales.slice(-6).reverse();
-  document.getElementById('dash-recent').innerHTML=recent.length===0
-    ?'<div class="empty-state"><i class="bi bi-cart"></i>No sales recorded yet</div>'
-    :`<div class="gs-table-wrap desktop-table"><table class="gs-table"><thead><tr><th>Item</th><th>Qty</th><th>Revenue</th><th>Profit</th><th>Date</th></tr></thead><tbody>`
-      +recent.map(s=>`<tr><td style="font-weight:600">${s.itemName}</td><td>${s.qty} ${s.unit}</td><td style="color:var(--green);font-family:'DM Mono',monospace">${fmt(s.revenue)}</td><td style="color:${s.profit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${fmt(s.profit)}</td><td style="color:var(--muted)">${s.date}</td></tr>`).join('')
-      +'</tbody></table></div>'
-      +'<div class="mobile-list">'+recent.map(s=>`<div class="mc"><div class="mc-top"><span class="mc-name">${s.itemName}</span><span style="color:var(--green);font-family:monospace;font-weight:600">${fmt(s.revenue)}</span></div><div class="mc-meta"><span>${s.qty} ${s.unit}</span><span style="color:${s.profit>=0?'var(--green)':'var(--red)'}">Profit: ${fmt(s.profit)}</span><span>${s.date}</span></div></div>`).join('')+'</div>';
-}
-
-function renderInventoryTable() {
-  const el=document.getElementById('inventory-table'); if(!el) return;
-  if(state.inventory.length===0){el.innerHTML='<div class="empty-state"><i class="bi bi-boxes"></i>No items added yet. Add your first item above.</div>';return;}
-  const needsPrice=state.inventory.filter(i=>i.sell<=0);
-  const banner=needsPrice.length>0?`<div class="alert-low-gs" style="margin-bottom:12px;background:#fef3c7;border-color:#fde68a;color:#92400e"><i class="bi bi-pencil-square"></i><span><strong>${needsPrice.length} item(s) need a selling price</strong> — click <i class="bi bi-pencil"></i> Edit to set it before recording sales.</span></div>`:'';
-  const rows=state.inventory.map(i=>{
-    const margin=i.sell>0?((i.sell-i.cost)/i.sell*100).toFixed(0):0, low=i.qty<=i.alert, noSell=i.sell<=0;
-    return {i,margin,low,noSell};
-  });
-  const desktopHTML=`<div class="gs-table-wrap desktop-table"><table class="gs-table"><thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Cost ₹</th><th>Sell ₹</th><th>MRP ₹</th><th>Margin</th><th>Alert at</th><th>Status</th><th>Actions</th></tr></thead><tbody>`
-    +rows.map(({i,margin,low,noSell})=>`<tr style="${noSell?'background:#fffbeb':''}">
-      <td style="font-weight:600">${i.name}${noSell?'<span style="margin-left:6px;font-size:11px;color:#d97706;font-weight:500">⚠ set price</span>':''}</td>
-      <td><span class="badge-gs badge-info">${i.cat}</span></td>
-      <td style="font-family:'DM Mono',monospace">${i.qty} ${i.unit}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--muted)">${fmt(i.cost)}</td>
-      <td style="font-family:'DM Mono',monospace;color:${noSell?'var(--amber)':'inherit'}">${noSell?'—':fmt(i.sell)}</td>
-      <td style="font-family:'DM Mono',monospace;color:var(--muted)">${i.mrp?fmt(i.mrp):'—'}</td>
-      <td style="color:${margin>20?'var(--green)':'var(--amber)'};font-weight:600">${margin}%</td>
-      <td style="color:var(--muted);font-size:13px">${i.alert} ${i.unit}</td>
-      <td><span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span></td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},-1)">−1</button>
-        <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},1)">+1</button>
-        <button class="btn-gs btn-sm-gs" style="background:#e0f2fe;color:#0369a1" onclick="openEditModal(${i.id})"><i class="bi bi-pencil"></i> Edit</button>
-        <button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteItem(${i.id})"><i class="bi bi-trash3"></i></button>
-      </td></tr>`).join('')+'</tbody></table></div>';
-  const mobileHTML='<div class="mobile-list">'+rows.map(({i,margin,low,noSell})=>`<div class="mc" style="${noSell?'background:#fffbeb':''}">
-    <div class="mc-top"><span class="mc-name">${i.name}${noSell?'<span style="font-size:10px;color:var(--amber);margin-left:5px">⚠ set price</span>':''}</span><span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span></div>
-    <div class="mc-meta"><span>${i.qty} ${i.unit}</span><span>Cost: ${fmt(i.cost)}</span><span>Sell: ${noSell?'—':fmt(i.sell)}</span>${i.mrp?`<span>MRP: ${fmt(i.mrp)}</span>`:''}<span>Margin: ${margin}%</span><span class="badge-gs badge-info">${i.cat}</span></div>
-    <div class="mc-actions">
-      <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},-1)">−1</button>
-      <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},1)">+1</button>
-      <button class="btn-gs btn-sm-gs" style="background:#e0f2fe;color:#0369a1" onclick="openEditModal(${i.id})"><i class="bi bi-pencil"></i> Edit</button>
-      <button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteItem(${i.id})"><i class="bi bi-trash3"></i></button>
-    </div></div>`).join('')+'</div>';
-  el.innerHTML=banner+desktopHTML+mobileHTML;
-}
-
+// ═══════════════════════════════════════════════════════════════════
+//  EDIT INVENTORY MODAL
+//  CHANGE: added expiry date field (Feature 2)
+// ═══════════════════════════════════════════════════════════════════
 function openEditModal(id) {
-  const i=state.inventory.find(x=>x.id===id); if(!i) return;
-  var old=document.getElementById('edit-modal-overlay'); if(old) old.remove();
-  const cats=['Grains & Pulses','Dairy','Vegetables','Fruits','Snacks','Beverages','Spices','Oils','Other'];
-  const units=['kg','litre','packet','piece','box'];
-  const overlay=document.createElement('div'); overlay.id='edit-modal-overlay';
+  const i = state.inventory.find(x=>x.id===id); if(!i) return;
+  var old = document.getElementById('edit-modal-overlay'); if(old) old.remove();
+  const cats  = ['Grains & Pulses','Dairy','Vegetables','Fruits','Snacks','Beverages','Spices','Oils','Other'];
+  const units = ['kg','litre','packet','piece','box'];
+  const overlay = document.createElement('div'); overlay.id='edit-modal-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9998;display:flex;align-items:flex-end;justify-content:center';
-  overlay.innerHTML=`<div style="background:#fff;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:24px 20px 32px;box-shadow:0 -4px 40px rgba(0,0,0,.2)">
+  overlay.innerHTML=`<div style="background:#fff;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:24px 20px 32px;box-shadow:0 -4px 40px rgba(0,0,0,.2)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
       <h3 style="font-size:17px;font-weight:700">Edit — ${i.name}</h3>
       <button onclick="document.getElementById('edit-modal-overlay').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b">×</button>
@@ -767,6 +971,7 @@ function openEditModal(id) {
       <div><label class="form-label" style="color:#16a34a;font-weight:700">Selling price (₹) ★</label><input class="form-control" type="number" id="em-sell" value="${i.sell}" step="0.01" inputmode="decimal" style="border-color:#16a34a"></div>
       <div><label class="form-label">MRP (₹)</label><input class="form-control" type="number" id="em-mrp" value="${i.mrp||''}" placeholder="0.00" step="0.01" inputmode="decimal"></div>
       <div><label class="form-label">Low stock alert at</label><input class="form-control" type="number" id="em-alert" value="${i.alert}" min="0" inputmode="numeric"></div>
+      <div><label class="form-label">Expiry date <span style="font-size:10px;font-weight:400;text-transform:none">(optional)</span></label><input class="form-control" type="date" id="em-expiry" value="${i.expiry||''}"></div>
     </div>
     <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
       <button class="btn-gs btn-outline-gs" onclick="document.getElementById('edit-modal-overlay').remove()">Cancel</button>
@@ -776,38 +981,375 @@ function openEditModal(id) {
   overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
 }
 
+// CHANGE: saveEdit now saves expiry field (Feature 2)
 function saveEdit(id) {
-  const i=state.inventory.find(x=>x.id===id); if(!i) return;
-  i.name=document.getElementById('em-name').value.trim()||i.name;
-  i.cat=document.getElementById('em-cat').value; i.unit=document.getElementById('em-unit').value;
-  i.cost=parseFloat(document.getElementById('em-cost').value)||0;
-  i.sell=parseFloat(document.getElementById('em-sell').value)||0;
-  i.mrp=parseFloat(document.getElementById('em-mrp').value)||0;
-  i.alert=parseFloat(document.getElementById('em-alert').value)||5;
-  document.getElementById('edit-modal-overlay').remove(); save(); toast('Item updated successfully'); renderAll();
+  const i = state.inventory.find(x=>x.id===id); if(!i) return;
+  i.name   = document.getElementById('em-name').value.trim() || i.name;
+  i.cat    = document.getElementById('em-cat').value;
+  i.unit   = document.getElementById('em-unit').value;
+  i.cost   = parseFloat(document.getElementById('em-cost').value) || 0;
+  i.sell   = parseFloat(document.getElementById('em-sell').value) || 0;
+  i.mrp    = parseFloat(document.getElementById('em-mrp').value)  || 0;
+  i.alert  = parseFloat(document.getElementById('em-alert').value) || 5;
+  i.expiry = document.getElementById('em-expiry').value || ''; // optional
+  document.getElementById('edit-modal-overlay').remove();
+  save(); toast('Item updated successfully'); renderAll();
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  EXPORT & CLEAR
+// ═══════════════════════════════════════════════════════════════════
+function exportCSV() {
+  const rows=[['Type','Item','Qty','Unit','Default Sell Price','Override Sell Price','Final Sell Price','Revenue','Cost','Profit','Price Overridden','Date','Supplier','Invoice']];
+  state.sales.forEach(s=>rows.push([
+    'Sale', s.itemName, s.qty, s.unit,
+    fmtN(s.defaultSellPrice != null ? s.defaultSellPrice : s.sell),
+    s.overrideSellPrice != null ? fmtN(s.overrideSellPrice) : '',
+    fmtN(s.finalSellPrice != null ? s.finalSellPrice : s.sell),
+    fmtN(s.revenue), fmtN(s.cost), fmtN(s.profit),
+    s.priceOverridden ? 'Yes' : 'No',
+    s.date, '', ''
+  ]));
+  state.purchases.forEach(p=>rows.push(['Purchase',p.item,p.qty,p.unit,'','','','',fmtN(p.cost),'','',p.date,p.supplier,p.invoice]));
+  const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`store_data_${new Date().toISOString().slice(0,10)}.csv`; a.click(); toast('CSV exported!');
+}
+
+function clearAllData() {
+  if(!confirm('Clear ALL data? This cannot be undone.')) return;
+  state={inventory:[],sales:[],purchases:[],suppliers:[]}; save(); toast('All data cleared'); renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  RENDER ALL
+// ═══════════════════════════════════════════════════════════════════
+function renderAll() {
+  renderDashboard();
+  renderInventoryTable();
+  renderSalesTable();
+  renderSuppliersTable();
+  renderSupplierContacts();
+  renderPnL();
+  renderRequestsList();
+  populateSupplierDropdown();
+  var supSel = document.getElementById('sup-contact-sel');
+  if (supSel) supSel.onchange = onSupplierContactChange;
+  if (document.getElementById('page-sales').classList.contains('active')) renderSaleRows();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  DASHBOARD
+//  CHANGE: added renderExpiryAlerts call (Feature 3)
+//  NOTE: dashboard totals use s.revenue / s.profit which are snapshots,
+//        so they're always historically accurate (Feature 1).
+// ═══════════════════════════════════════════════════════════════════
+function renderDashboard() {
+  // All reduce calls read s.revenue and s.profit — these are snapshots stored
+  // at time of sale, so totals are always historically accurate.
+  const totalRevenue  = state.sales.reduce((s,x)=>s+x.revenue, 0);
+  const totalCost     = state.sales.reduce((s,x)=>s+x.cost,    0);
+  const totalPurchase = state.purchases.reduce((s,x)=>s+x.cost, 0);
+  const profit        = totalRevenue - totalCost;
+  const stockValue    = state.inventory.reduce((s,i)=>s+i.qty*i.cost, 0);
+  const today         = new Date().toISOString().slice(0,10);
+  const todayRev      = state.sales.filter(s=>s.date===today).reduce((s,x)=>s+x.revenue, 0);
+
+  const metrics = [
+    {label:"Today's Revenue", value:fmt(todayRev),       icon:'bi-sun',          color:'#2563eb', bg:'#dbeafe'},
+    {label:'Total Revenue',   value:fmt(totalRevenue),   icon:'bi-graph-up-arrow',color:'#16a34a', bg:'#dcfce7'},
+    {label:'Gross Profit',    value:fmt(profit),         icon:'bi-coin',          color:profit>=0?'#16a34a':'#dc2626', bg:profit>=0?'#dcfce7':'#fee2e2', cls:profit>=0?'pos':'neg'},
+    {label:'Stock Value',     value:fmt(stockValue),     icon:'bi-boxes',         color:'#d97706', bg:'#fef3c7'},
+    {label:'Items in Stock',  value:state.inventory.length, icon:'bi-tags',       color:'#7c3aed', bg:'#ede9fe'},
+    {label:'Total Purchases', value:fmt(totalPurchase),  icon:'bi-truck-front',   color:'#64748b', bg:'#f1f5f9'},
+  ];
+  document.getElementById('dash-metrics').innerHTML = metrics.map(m=>`
+    <div class="metric-card" style="--accent-color:${m.color}">
+      <div class="metric-icon" style="background:${m.bg};color:${m.color}"><i class="bi ${m.icon}"></i></div>
+      <div class="metric-label">${m.label}</div>
+      <div class="metric-value ${m.cls||''}" style="color:${m.color}">${m.value}</div>
+    </div>`).join('');
+
+  const margin = totalRevenue > 0 ? ((profit/totalRevenue)*100).toFixed(1) : 0;
+  document.getElementById('dash-pnl').innerHTML=`
+    <div class="pnl-row"><span style="color:var(--muted)">Total Revenue</span><span style="color:var(--green);font-weight:600">${fmt(totalRevenue)}</span></div>
+    <div class="pnl-row"><span style="color:var(--muted)">Cost of Goods Sold</span><span style="color:var(--red)">${fmt(totalCost)}</span></div>
+    <div class="pnl-row"><span style="color:var(--muted)">Supplier Purchases</span><span style="color:var(--red)">${fmt(totalPurchase)}</span></div>
+    <div class="pnl-row total"><span>Gross Profit</span><span style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</span></div>
+    <div class="pnl-row"><span style="color:var(--muted)">Profit Margin</span><span>${margin}%</span></div>`;
+
+  const lowItems = state.inventory.filter(i=>i.qty<=i.alert);
+  document.getElementById('dash-lowstock').innerHTML = lowItems.length===0
+    ? '<p style="color:var(--muted);font-size:13px"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> All items well stocked</p>'
+    : lowItems.map(i=>`<div class="alert-low-gs"><i class="bi bi-exclamation-triangle-fill"></i><strong>${i.name}</strong> — only ${i.qty} ${i.unit} left</div>`).join('');
+
+  // Feature 3: Expiry alerts
+  renderExpiryAlerts();
+
+  // Recent sales (declared here so it's in scope for the render below)
+  const recent = state.sales.slice(-6).reverse();
+
+  // Pending supplier requests on dashboard
+  const pending = (state.supplierRequests||[]).filter(r=>r.status==='pending');
+  const badge = document.getElementById('dash-req-badge');
+  const reqDiv = document.getElementById('dash-requests');
+  if (badge) badge.innerHTML = pending.length > 0
+    ? `<span class="badge-gs badge-pending">${pending.length} pending</span>` : '';
+  if (reqDiv) {
+    if (pending.length === 0) {
+      reqDiv.innerHTML = '<p style="color:var(--muted);font-size:13px"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> No pending purchase requests</p>';
+    } else {
+      reqDiv.innerHTML = pending.slice(0,3).map(r => {
+        const sup = state.suppliers.find(s=>s.id===r.supplierId);
+        const supName = sup ? sup.name : (r.supplierName||'Unknown supplier');
+        const total = r.items.reduce((s,i)=>s+(i.estCost||0),0);
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px">
+          <div>
+            <span style="font-weight:600">${supName}</span>
+            <span style="color:var(--muted);margin-left:8px">${r.items.length} item${r.items.length!==1?'s':''}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--muted)">${r.date}</span>
+            <button class="btn-gs btn-sm-gs btn-primary-gs" onclick="switchPage('requests')"><i class="bi bi-arrow-right"></i></button>
+          </div>
+        </div>`;
+      }).join('') + (pending.length>3?`<p style="font-size:12px;color:var(--muted);margin-top:8px">+${pending.length-3} more pending requests</p>`:'');
+    }
+  }
+  document.getElementById('dash-recent').innerHTML = recent.length===0
+    ? '<div class="empty-state"><i class="bi bi-cart"></i>No sales recorded yet</div>'
+    : `<div class="gs-table-wrap desktop-table"><table class="gs-table"><thead><tr><th>Item</th><th>Qty</th><th>Revenue</th><th>Profit</th><th>Date</th></tr></thead><tbody>`
+      + recent.map(s=>`<tr style="${s.priceOverridden?'background:#fffbeb':''}">
+          <td style="font-weight:600">${s.itemName}</td>
+          <td>${s.qty} ${s.unit}</td>
+          <td style="color:var(--green);font-family:'DM Mono',monospace">${fmt(s.revenue)}</td>
+          <td style="color:${s.profit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${fmt(s.profit)}</td>
+          <td style="color:var(--muted)">${s.date}${s.priceOverridden?'<span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px;margin-left:6px">Custom</span>':''}</td>
+        </tr>`).join('')+'</tbody></table></div>'
+      + '<div class="mobile-list">'+recent.map(s=>`<div class="mc" style="${s.priceOverridden?'background:#fffbeb':''}">
+          <div class="mc-top"><span class="mc-name">${s.itemName}</span><span style="color:var(--green);font-family:monospace;font-weight:600">${fmt(s.revenue)}</span></div>
+          <div class="mc-meta"><span>${s.qty} ${s.unit}</span><span style="color:${s.profit>=0?'var(--green)':'var(--red)'}">Profit: ${fmt(s.profit)}</span><span>${s.date}</span>${s.priceOverridden?'<span style="color:var(--amber);font-size:10px">Custom price</span>':''}</div>
+        </div>`).join('')+'</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  EXPIRY ALERTS (Feature 3 — new function)
+//  Shows expired items (red) and items expiring within 7 days (amber).
+//  Items with no expiry date are silently ignored.
+// ═══════════════════════════════════════════════════════════════════
+function renderExpiryAlerts() {
+  const el = document.getElementById('dash-expiry'); if(!el) return;
+  const WARN_DAYS = 7;
+  const itemsWithExpiry = state.inventory.filter(i => i.expiry && i.qty > 0);
+  const expired  = itemsWithExpiry.filter(i => daysUntilExpiry(i.expiry) < 0)
+                    .sort((a,b) => a.expiry.localeCompare(b.expiry));
+  const expiring = itemsWithExpiry.filter(i => { const d=daysUntilExpiry(i.expiry); return d>=0 && d<=WARN_DAYS; })
+                    .sort((a,b) => a.expiry.localeCompare(b.expiry));
+
+  if (expired.length === 0 && expiring.length === 0) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> No expiry issues — inventory is healthy</p>';
+    return;
+  }
+
+  let html = '';
+
+  if (expired.length > 0) {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px"><i class="bi bi-x-circle-fill"></i> Expired (${expired.length})</div>`;
+    html += expired.map(i => {
+      const days = Math.abs(daysUntilExpiry(i.expiry));
+      return `<div class="expiry-item expiry-expired">
+        <div>
+          <span style="font-weight:600;color:var(--red)">${i.name}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">${i.qty} ${i.unit}</span>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;font-weight:600;color:var(--red)">Expired ${days} day${days===1?'':'s'} ago</div>
+          <div style="font-size:11px;color:var(--muted)">${fmtExpiry(i.expiry)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if (expiring.length > 0) {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.05em;margin-top:${expired.length?'12px':'0'};margin-bottom:6px"><i class="bi bi-exclamation-triangle-fill"></i> Expiring soon (${expiring.length})</div>`;
+    html += expiring.map(i => {
+      const days = daysUntilExpiry(i.expiry);
+      const label = days === 0 ? 'Expires TODAY' : `Expires in ${days} day${days===1?'':'s'}`;
+      return `<div class="expiry-item expiry-soon">
+        <div>
+          <span style="font-weight:600;color:var(--amber)">${i.name}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">${i.qty} ${i.unit}</span>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;font-weight:600;color:var(--amber)">${label}</div>
+          <div style="font-size:11px;color:var(--muted)">${fmtExpiry(i.expiry)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  INVENTORY TABLE
+//  CHANGE: added Expiry column (Feature 2)
+//  Historical sale prices are UNAFFECTED here — this only changes display
+// ═══════════════════════════════════════════════════════════════════
+function renderInventoryTable() {
+  const el = document.getElementById('inventory-table'); if(!el) return;
+  if (state.inventory.length===0) { el.innerHTML='<div class="empty-state"><i class="bi bi-boxes"></i>No items added yet. Add your first item above.</div>'; return; }
+  const needsPrice = state.inventory.filter(i=>i.sell<=0);
+  const banner = needsPrice.length > 0
+    ? `<div class="alert-low-gs" style="margin-bottom:12px;background:#fef3c7;border-color:#fde68a;color:#92400e"><i class="bi bi-pencil-square"></i><span><strong>${needsPrice.length} item(s) need a selling price</strong> — click Edit</span></div>` : '';
+  const rows = state.inventory.map(i => {
+    const margin  = i.sell>0 ? ((i.sell-i.cost)/i.sell*100).toFixed(0) : 0;
+    const low     = i.qty <= i.alert;
+    const noSell  = i.sell <= 0;
+    const expDays = daysUntilExpiry(i.expiry);
+    const expLabel = i.expiry
+      ? (expDays < 0
+          ? `<span style="color:var(--red);font-size:11px;font-weight:600">${fmtExpiry(i.expiry)} (expired)</span>`
+          : expDays <= 7
+          ? `<span style="color:var(--amber);font-size:11px;font-weight:600">${fmtExpiry(i.expiry)} (${expDays}d)</span>`
+          : `<span style="font-size:11px">${fmtExpiry(i.expiry)}</span>`)
+      : '<span style="color:var(--muted);font-size:11px">—</span>';
+    return {i,margin,low,noSell,expLabel,expDays};
+  });
+
+  const desktopHTML = `<div class="gs-table-wrap desktop-table"><table class="gs-table">
+    <thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Cost ₹</th><th>Sell ₹</th><th>MRP ₹</th><th>Margin</th><th>Alert</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead><tbody>`
+    + rows.map(({i,margin,low,noSell,expLabel,expDays})=>`<tr style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
+        <td style="font-weight:600">${i.name}${noSell?'<span style="margin-left:6px;font-size:11px;color:#d97706">⚠</span>':''}</td>
+        <td><span class="badge-gs badge-info">${i.cat}</span></td>
+        <td style="font-family:'DM Mono',monospace">${i.qty} ${i.unit}</td>
+        <td style="font-family:'DM Mono',monospace;color:var(--muted)">${fmt(i.cost)}</td>
+        <td style="font-family:'DM Mono',monospace;color:${noSell?'var(--amber)':'inherit'}">${noSell?'—':fmt(i.sell)}</td>
+        <td style="font-family:'DM Mono',monospace;color:var(--muted)">${i.mrp?fmt(i.mrp):'—'}</td>
+        <td style="color:${margin>20?'var(--green)':'var(--amber)'};font-weight:600">${margin}%</td>
+        <td style="color:var(--muted);font-size:12px">${i.alert} ${i.unit}</td>
+        <td>${expLabel}</td>
+        <td><span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span></td>
+        <td style="display:flex;gap:5px;flex-wrap:wrap">
+          <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},-1)">−1</button>
+          <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},1)">+1</button>
+          <button class="btn-gs btn-sm-gs" style="background:#e0f2fe;color:#0369a1" onclick="openEditModal(${i.id})"><i class="bi bi-pencil"></i> Edit</button>
+          <button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteItem(${i.id})"><i class="bi bi-trash3"></i></button>
+        </td></tr>`).join('')+'</tbody></table></div>';
+
+  const mobileHTML = '<div class="mobile-list">'+rows.map(({i,margin,low,noSell,expLabel,expDays})=>`
+    <div class="mc" style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
+      <div class="mc-top">
+        <span class="mc-name">${i.name}${noSell?'<span style="font-size:10px;color:var(--amber);margin-left:5px">⚠</span>':''}</span>
+        <span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span>
+      </div>
+      <div class="mc-meta">
+        <span>${i.qty} ${i.unit}</span>
+        <span>Cost: ${fmt(i.cost)}</span>
+        <span>Sell: ${noSell?'—':fmt(i.sell)}</span>
+        ${i.mrp?`<span>MRP: ${fmt(i.mrp)}</span>`:''}
+        <span>Margin: ${margin}%</span>
+        <span class="badge-gs badge-info">${i.cat}</span>
+        <span><i class="bi bi-calendar-event"></i> ${expLabel}</span>
+      </div>
+      <div class="mc-actions">
+        <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},-1)">−1</button>
+        <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},1)">+1</button>
+        <button class="btn-gs btn-sm-gs" style="background:#e0f2fe;color:#0369a1" onclick="openEditModal(${i.id})"><i class="bi bi-pencil"></i> Edit</button>
+        <button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteItem(${i.id})"><i class="bi bi-trash3"></i></button>
+      </div>
+    </div>`).join('')+'</div>';
+
+  el.innerHTML = banner + desktopHTML + mobileHTML;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SALES TABLE
+//  Shows override pricing indicator when a custom price was used.
+//  All revenue/profit values come from snapshotted finalSellPrice.
+//  Backward compat: old records without priceOverridden field render normally.
+// ═══════════════════════════════════════════════════════════════════
 function renderSalesTable() {
-  const el=document.getElementById('sales-table'); if(!el) return;
-  if(state.sales.length===0){el.innerHTML='<div class="empty-state"><i class="bi bi-cart"></i>No sales recorded yet.</div>';return;}
-  el.innerHTML=`<div class="gs-table-wrap desktop-table"><table class="gs-table"><thead><tr><th>Item</th><th>Qty</th><th>Sell price</th><th>Revenue</th><th>Profit</th><th>Date</th><th></th></tr></thead><tbody>`
-    +state.sales.slice().reverse().map(s=>`<tr><td style="font-weight:600">${s.itemName}</td><td>${s.qty} ${s.unit}</td><td style="font-family:'DM Mono',monospace;color:var(--muted)">${fmt(s.sell)}</td><td style="font-family:'DM Mono',monospace;color:var(--green)">${fmt(s.revenue)}</td><td style="font-family:'DM Mono',monospace;color:${s.profit>=0?'var(--green)':'var(--red)'}">${fmt(s.profit)}</td><td style="color:var(--muted)">${s.date}</td><td><button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteSale(${s.id})"><i class="bi bi-trash3"></i></button></td></tr>`).join('')+'</tbody></table></div>'
-    +'<div class="mobile-list">'+state.sales.slice().reverse().map(s=>`<div class="mc"><div class="mc-top"><span class="mc-name">${s.itemName}</span><span style="color:var(--green);font-family:monospace;font-weight:600">${fmt(s.revenue)}</span></div><div class="mc-meta"><span>${s.qty} ${s.unit} × ${fmt(s.sell)}</span><span style="color:${s.profit>=0?'var(--green)':'var(--red)'}">Profit: ${fmt(s.profit)}</span><span>${s.date}</span></div><div class="mc-actions"><button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteSale(${s.id})"><i class="bi bi-trash3"></i> Delete</button></div></div>`).join('')+'</div>';
+  const el = document.getElementById('sales-table'); if(!el) return;
+  if (state.sales.length===0) { el.innerHTML='<div class="empty-state"><i class="bi bi-cart"></i>No sales recorded yet.</div>'; return; }
+
+  // Helper: build sell-price cell with override display
+  function sellPriceCell(s) {
+    if (s.priceOverridden && s.defaultSellPrice != null && s.overrideSellPrice != null) {
+      return `<td style="font-family:'DM Mono',monospace">
+        <span style="text-decoration:line-through;color:var(--muted);font-size:11px">${fmt(s.defaultSellPrice)}</span>
+        <span style="color:var(--amber);font-weight:600;margin-left:4px">${fmt(s.finalSellPrice)}</span>
+        <span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px;margin-left:4px;padding:1px 6px">Custom</span>
+      </td>`;
+    }
+    return `<td style="font-family:'DM Mono',monospace;color:var(--muted)">${fmt(s.sell)}</td>`;
+  }
+
+  function sellPriceMeta(s) {
+    if (s.priceOverridden && s.defaultSellPrice != null && s.overrideSellPrice != null) {
+      return `<span><s style="font-size:10px">${fmt(s.defaultSellPrice)}</s> → <span style="color:var(--amber);font-weight:600">${fmt(s.finalSellPrice)}</span> <span style="font-size:10px;color:var(--amber)">(Custom)</span></span>`;
+    }
+    return `<span>${s.qty} ${s.unit} × ${fmt(s.sell)}</span>`;
+  }
+
+  el.innerHTML=`<div class="gs-table-wrap desktop-table"><table class="gs-table">
+    <thead><tr><th>Item</th><th>Qty</th><th>Sell price</th><th>Revenue</th><th>Profit</th><th>Date</th><th></th></tr></thead><tbody>`
+    + state.sales.slice().reverse().map(s=>`<tr style="${s.priceOverridden?'background:#fffbeb':''}">
+        <td style="font-weight:600">${s.itemName}</td>
+        <td>${s.qty} ${s.unit}</td>
+        ${sellPriceCell(s)}
+        <td style="font-family:'DM Mono',monospace;color:var(--green)">${fmt(s.revenue)}</td>
+        <td style="font-family:'DM Mono',monospace;color:${s.profit>=0?'var(--green)':'var(--red)'}">${fmt(s.profit)}</td>
+        <td style="color:var(--muted)">${s.date}</td>
+        <td><button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteSale(${s.id})"><i class="bi bi-trash3"></i></button></td>
+      </tr>`).join('')+'</tbody></table></div>'
+    + '<div class="mobile-list">'+state.sales.slice().reverse().map(s=>`<div class="mc" style="${s.priceOverridden?'background:#fffbeb':''}">
+        <div class="mc-top">
+          <span class="mc-name">${s.itemName}</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            ${s.priceOverridden?'<span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px">Custom</span>':''}
+            <span style="color:var(--green);font-family:monospace;font-weight:600">${fmt(s.revenue)}</span>
+          </span>
+        </div>
+        <div class="mc-meta">
+          ${sellPriceMeta(s)}
+          <span style="color:${s.profit>=0?'var(--green)':'var(--red)'}">Profit: ${fmt(s.profit)}</span>
+          <span>${s.date}</span>
+        </div>
+        <div class="mc-actions"><button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteSale(${s.id})"><i class="bi bi-trash3"></i> Delete</button></div>
+      </div>`).join('')+'</div>';
 }
 
 function renderSuppliersTable() {
-  const el=document.getElementById('suppliers-table'); if(!el) return;
-  if(state.purchases.length===0){el.innerHTML='<div class="empty-state"><i class="bi bi-truck-front"></i>No purchases recorded yet.</div>';return;}
-  el.innerHTML=`<div class="gs-table-wrap desktop-table"><table class="gs-table"><thead><tr><th>Supplier</th><th>Item</th><th>Qty</th><th>Total cost</th><th>Invoice</th><th>Date</th><th></th></tr></thead><tbody>`
-    +state.purchases.slice().reverse().map(p=>`<tr><td style="font-weight:600">${p.supplier}</td><td>${p.item}</td><td>${p.qty} ${p.unit}</td><td style="font-family:'DM Mono',monospace;color:var(--red)">${fmt(p.cost)}</td><td style="color:var(--muted)">${p.invoice||'—'}</td><td style="color:var(--muted)">${p.date}</td><td><button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deletePurchase(${p.id})"><i class="bi bi-trash3"></i></button></td></tr>`).join('')+'</tbody></table></div>'
-    +'<div class="mobile-list">'+state.purchases.slice().reverse().map(p=>`<div class="mc"><div class="mc-top"><span class="mc-name">${p.item}</span><span style="color:var(--red);font-family:monospace;font-weight:600">${fmt(p.cost)}</span></div><div class="mc-meta"><span><i class="bi bi-truck-front"></i> ${p.supplier}</span><span>${p.qty} ${p.unit}</span>${p.invoice?`<span>Invoice: ${p.invoice}</span>`:''}<span>${p.date}</span></div><div class="mc-actions"><button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deletePurchase(${p.id})"><i class="bi bi-trash3"></i> Delete</button></div></div>`).join('')+'</div>';
+  const el = document.getElementById('suppliers-table'); if(!el) return;
+  if (state.purchases.length===0) { el.innerHTML='<div class="empty-state"><i class="bi bi-truck-front"></i>No purchases recorded yet.</div>'; return; }
+  el.innerHTML=`<div class="gs-table-wrap desktop-table"><table class="gs-table">
+    <thead><tr><th>Supplier</th><th>Item</th><th>Qty</th><th>Total cost</th><th>Invoice</th><th>Date</th><th></th></tr></thead><tbody>`
+    + state.purchases.slice().reverse().map(p=>`<tr>
+        <td style="font-weight:600">${p.supplier}</td><td>${p.item}</td><td>${p.qty} ${p.unit}</td>
+        <td style="font-family:'DM Mono',monospace;color:var(--red)">${fmt(p.cost)}</td>
+        <td style="color:var(--muted)">${p.invoice||'—'}</td><td style="color:var(--muted)">${p.date}</td>
+        <td><button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deletePurchase(${p.id})"><i class="bi bi-trash3"></i></button></td>
+      </tr>`).join('')+'</tbody></table></div>'
+    + '<div class="mobile-list">'+state.purchases.slice().reverse().map(p=>`<div class="mc">
+        <div class="mc-top"><span class="mc-name">${p.item}</span><span style="color:var(--red);font-family:monospace;font-weight:600">${fmt(p.cost)}</span></div>
+        <div class="mc-meta"><span><i class="bi bi-truck-front"></i> ${p.supplier}</span><span>${p.qty} ${p.unit}</span>${p.invoice?`<span>Invoice: ${p.invoice}</span>`:''}<span>${p.date}</span></div>
+        <div class="mc-actions"><button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deletePurchase(${p.id})"><i class="bi bi-trash3"></i> Delete</button></div>
+      </div>`).join('')+'</div>';
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  P&L
+//  NOTE (Feature 1): all totals from state.sales use snapshotted
+//  revenue/profit fields — always historically accurate.
+// ═══════════════════════════════════════════════════════════════════
 function renderPnL() {
-  const el=document.getElementById('pnl-full'); if(!el) return;
-  const totalRevenue=state.sales.reduce((s,x)=>s+x.revenue,0), totalCost=state.sales.reduce((s,x)=>s+x.cost,0);
-  const totalPurchase=state.purchases.reduce((s,x)=>s+x.cost,0), profit=totalRevenue-totalCost;
-  const margin=totalRevenue>0?((profit/totalRevenue)*100).toFixed(1):0;
+  const el = document.getElementById('pnl-full'); if(!el) return;
+  const totalRevenue  = state.sales.reduce((s,x)=>s+x.revenue,0);
+  const totalCost     = state.sales.reduce((s,x)=>s+x.cost,0);
+  const totalPurchase = state.purchases.reduce((s,x)=>s+x.cost,0);
+  const profit        = totalRevenue - totalCost;
+  const margin        = totalRevenue>0 ? ((profit/totalRevenue)*100).toFixed(1) : 0;
   el.innerHTML=`
     <div class="pnl-row"><span style="color:var(--muted)">Gross Revenue</span><span style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalRevenue)}</span></div>
     <div class="pnl-row"><span style="color:var(--muted)">Cost of Goods Sold</span><span style="color:var(--red);font-family:'DM Mono',monospace">− ${fmt(totalCost)}</span></div>
@@ -821,22 +1363,592 @@ function renderPnL() {
   const top=Object.entries(itemMap).sort((a,b)=>b[1].rev-a[1].rev).slice(0,8);
   document.getElementById('pnl-top').innerHTML=top.length===0
     ?'<div class="empty-state"><i class="bi bi-trophy"></i>No sales yet</div>'
-    :`<div class="gs-table-wrap"><table class="gs-table"><thead><tr><th>Item</th><th>Units sold</th><th>Revenue</th><th>Profit</th></tr></thead><tbody>`+top.map(([n,d])=>`<tr><td style="font-weight:600">${n}</td><td>${d.qty.toFixed(1)}</td><td style="color:var(--green);font-family:'DM Mono',monospace">${fmt(d.rev)}</td><td style="color:${d.profit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${fmt(d.profit)}</td></tr>`).join('')+'</tbody></table></div>';
+    :`<div class="gs-table-wrap"><table class="gs-table"><thead><tr><th>Item</th><th>Units sold</th><th>Revenue</th><th>Profit</th></tr></thead><tbody>`
+      +top.map(([n,d])=>`<tr><td style="font-weight:600">${n}</td><td>${d.qty.toFixed(1)}</td><td style="color:var(--green);font-family:'DM Mono',monospace">${fmt(d.rev)}</td><td style="color:${d.profit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${fmt(d.profit)}</td></tr>`).join('')
+      +'</tbody></table></div>';
   const dateMap={};
   state.sales.forEach(s=>{if(!dateMap[s.date])dateMap[s.date]={rev:0,profit:0,count:0};dateMap[s.date].rev+=s.revenue;dateMap[s.date].profit+=s.profit;dateMap[s.date].count++;});
   const dates=Object.entries(dateMap).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,15);
   document.getElementById('pnl-bydate').innerHTML=dates.length===0
     ?'<div class="empty-state"><i class="bi bi-calendar"></i>No sales data yet</div>'
-    :`<div class="gs-table-wrap"><table class="gs-table"><thead><tr><th>Date</th><th>Transactions</th><th>Revenue</th><th>Profit</th></tr></thead><tbody>`+dates.map(([date,d])=>`<tr><td style="font-weight:600">${date}</td><td>${d.count}</td><td style="color:var(--green);font-family:'DM Mono',monospace">${fmt(d.rev)}</td><td style="color:${d.profit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${fmt(d.profit)}</td></tr>`).join('')+'</tbody></table></div>';
+    :`<div class="gs-table-wrap"><table class="gs-table"><thead><tr><th>Date</th><th>Transactions</th><th>Revenue</th><th>Profit</th></tr></thead><tbody>`
+      +dates.map(([date,d])=>`<tr><td style="font-weight:600">${date}</td><td>${d.count}</td><td style="color:var(--green);font-family:'DM Mono',monospace">${fmt(d.rev)}</td><td style="color:${d.profit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${fmt(d.profit)}</td></tr>`).join('')
+      +'</tbody></table></div>';
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  SUPPLIER REQUEST SYSTEM
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Filter state ──
+let currentReqFilter = 'all';
+
+function setReqFilter(filter, btn) {
+  currentReqFilter = filter;
+  document.querySelectorAll('.req-filter-btn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderRequestsList();
+}
+
+// ── Build supplier options for request modals ──
+function buildSupplierOpts(selectedId) {
+  if (!state.suppliers.length) return '<option value="">No suppliers yet — add one first</option>';
+  return '<option value="">Select supplier...</option>'
+    + state.suppliers.map(s=>`<option value="${s.id}"${s.id===selectedId?' selected':''}>${s.name}${s.phone?' ('+s.phone+')':''}</option>`).join('');
+}
+
+// ── NEW REQUEST MODAL ──
+// Opens a modal to create a brand-new supplier request with multiple item rows.
+function openNewRequestModal() {
+  var old = document.getElementById('req-modal-overlay'); if(old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'req-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9998;display:flex;align-items:flex-end;justify-content:center;overflow-y:auto';
+  overlay.innerHTML = `
+    <div id="req-modal-box" style="background:#fff;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:24px 20px 32px;box-shadow:0 -4px 40px rgba(0,0,0,.2)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <h3 style="font-size:17px;font-weight:700"><i class="bi bi-clipboard-plus" style="color:var(--green)"></i> New Purchase Request</h3>
+        <button onclick="document.getElementById('req-modal-overlay').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b">×</button>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-sm-6">
+          <label class="form-label">Supplier ★</label>
+          <select class="form-select" id="req-supplier">${buildSupplierOpts(null)}</select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label">Request date</label>
+          <input type="date" class="form-control" id="req-date" value="${new Date().toISOString().slice(0,10)}">
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label">Expected delivery</label>
+          <input type="date" class="form-control" id="req-delivery">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notes <span style="font-size:10px;font-weight:400;text-transform:none">(optional)</span></label>
+          <input type="text" class="form-control" id="req-notes" placeholder="e.g. Monthly restock, check packaging">
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i class="bi bi-list-ul" style="color:var(--muted)"></i> Items to order
+      </div>
+      <div id="req-items-container"></div>
+      <div id="req-total-bar" style="display:none;margin:10px 0;padding:10px 14px;background:var(--surface);border-radius:8px;border:1px solid var(--border);font-size:13px">
+        <span style="color:var(--muted)">Items: <strong id="rq-count">0</strong></span>
+        <span style="margin-left:20px;color:var(--muted)">Est. total: <strong id="rq-total" style="font-family:'DM Mono',monospace;color:var(--ink)">₹0.00</strong></span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+        <button class="btn-gs btn-outline-gs" onclick="document.getElementById('req-modal-overlay').remove()">Cancel</button>
+        <button class="btn-gs btn-primary-gs" onclick="saveNewRequest()"><i class="bi bi-check-lg"></i> Create Request</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  // init modal item rows
+  modalReqRows = []; modalReqNextId = 1;
+  addModalReqRow();
+}
+
+// ── modal-local item row state (lives only while modal is open) ──
+let modalReqRows   = [];
+let modalReqNextId = 1;
+
+function addModalReqRow() {
+  const rowId = modalReqNextId++;
+  modalReqRows.push({ rowId, name:'', qty:0, unit:'kg', estCost:0, cat:'Other' });
+  renderModalReqRows();
+}
+
+function renderModalReqRows() {
+  const container = document.getElementById('req-items-container'); if(!container) return;
+  const cats  = ['Grains & Pulses','Dairy','Vegetables','Fruits','Snacks','Beverages','Spices','Oils','Other'];
+  const units = ['kg','litre','packet','piece','box'];
+  // Build existing inventory name datalist for autocomplete
+  const dlId = 'req-inv-names';
+  const existingNames = state.inventory.map(i=>`<option value="${i.name}">`).join('');
+
+  container.innerHTML = `<datalist id="${dlId}">${existingNames}</datalist>`
+    + modalReqRows.map((row, idx) => `
+    <div class="req-row" id="req-row-${row.rowId}" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-sm-4">
+          ${idx===0?'<label class="form-label">Item name</label>':''}
+          <input type="text" class="form-control" list="${dlId}" placeholder="e.g. Basmati Rice"
+            value="${row.name}"
+            oninput="updateModalReqRow(${row.rowId},'name',this.value)"
+            onchange="updateModalReqRow(${row.rowId},'name',this.value)">
+        </div>
+        <div class="col-4 col-sm-2">
+          ${idx===0?'<label class="form-label">Qty</label>':''}
+          <input type="number" class="form-control" placeholder="0" min="0" inputmode="decimal"
+            value="${row.qty||''}"
+            oninput="updateModalReqRow(${row.rowId},'qty',this.value)"
+            onchange="updateModalReqRow(${row.rowId},'qty',this.value)">
+        </div>
+        <div class="col-4 col-sm-2">
+          ${idx===0?'<label class="form-label">Unit</label>':''}
+          <select class="form-select" onchange="updateModalReqRow(${row.rowId},'unit',this.value)">
+            ${units.map(u=>`<option${u===row.unit?' selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+        <div class="col-4 col-sm-2">
+          ${idx===0?'<label class="form-label">Est. cost ₹</label>':''}
+          <input type="number" class="form-control" placeholder="0.00" step="0.01" inputmode="decimal"
+            value="${row.estCost||''}"
+            oninput="updateModalReqRow(${row.rowId},'estCost',this.value)"
+            onchange="updateModalReqRow(${row.rowId},'estCost',this.value)">
+        </div>
+        <div class="col-8 col-sm-1" style="display:flex;align-items:flex-end;gap:4px">
+          ${modalReqRows.length>1
+            ? `<button class="btn-gs btn-danger-gs btn-sm-gs" onclick="removeModalReqRow(${row.rowId})" style="padding:8px 10px"><i class="bi bi-x-lg"></i></button>`
+            : '<div style="width:34px"></div>'}
+        </div>
+      </div>
+    </div>`).join('');
+
+  container.innerHTML += `<button class="btn-gs btn-outline-gs btn-sm-gs" onclick="addModalReqRow()" style="margin-top:2px"><i class="bi bi-plus-lg"></i> Add item</button>`;
+  updateReqTotalBar();
+}
+
+function updateModalReqRow(rowId, field, val) {
+  const row = modalReqRows.find(r=>r.rowId===rowId); if(!row) return;
+  if (field==='qty' || field==='estCost') row[field] = parseFloat(val)||0;
+  else row[field] = val;
+  updateReqTotalBar();
+}
+
+function removeModalReqRow(rowId) {
+  modalReqRows = modalReqRows.filter(r=>r.rowId!==rowId);
+  if (modalReqRows.length===0) addModalReqRow();
+  else renderModalReqRows();
+}
+
+function updateReqTotalBar() {
+  const bar = document.getElementById('req-total-bar'); if(!bar) return;
+  const validRows = modalReqRows.filter(r=>r.name&&r.qty>0);
+  if (validRows.length===0) { bar.style.display='none'; return; }
+  const total = validRows.reduce((s,r)=>s+(r.estCost||0),0);
+  bar.style.display = 'block';
+  document.getElementById('rq-count').textContent = validRows.length;
+  document.getElementById('rq-total').textContent = fmt(total);
+}
+
+// ── SAVE NEW REQUEST ──
+function saveNewRequest() {
+  const supId    = parseInt(document.getElementById('req-supplier').value);
+  const date     = document.getElementById('req-date').value;
+  const delivery = document.getElementById('req-delivery').value;
+  const notes    = document.getElementById('req-notes').value.trim();
+
+  if (!supId) { toast('Please select a supplier','error'); return; }
+  if (!date)  { toast('Select a request date','error'); return; }
+
+  const validItems = modalReqRows.filter(r=>r.name.trim()&&r.qty>0);
+  if (validItems.length===0) { toast('Add at least one item with name and quantity','error'); return; }
+
+  // Check for duplicate item names within the request
+  const names = validItems.map(r=>r.name.trim().toLowerCase());
+  const dupes = names.filter((n,i)=>names.indexOf(n)!==i);
+  if (dupes.length>0) { toast(`Duplicate item: "${dupes[0]}" — merge or rename it`,'error'); return; }
+
+  const sup = state.suppliers.find(s=>s.id===supId);
+  const req = {
+    id:           'REQ-' + Date.now(),
+    supplierId:   supId,
+    supplierName: sup ? sup.name : '',
+    date,
+    deliveryDate: delivery,
+    notes,
+    status:       'pending',  // pending | completed | cancelled
+    createdAt:    new Date().toISOString(),
+    confirmedAt:  null,
+    items: validItems.map(r=>({
+      name:    r.name.trim(),
+      qty:     r.qty,
+      unit:    r.unit,
+      estCost: r.estCost || 0,
+      cat:     r.cat || 'Other'
+    }))
+  };
+
+  state.supplierRequests.push(req);
+  save();
+  toast(`Purchase request created — ${validItems.length} item${validItems.length!==1?'s':''}`);
+  document.getElementById('req-modal-overlay').remove();
+  renderAll();
+}
+
+// ── VIEW / CONFIRM / CANCEL REQUEST ──
+
+// Open the confirm delivery modal — shows all items with editable actual quantities and costs
+function openConfirmRequestModal(reqId) {
+  const req = state.supplierRequests.find(r=>r.id===reqId); if(!req) return;
+  if (req.status!=='pending') { toast('Only pending requests can be confirmed','error'); return; }
+
+  var old = document.getElementById('conf-modal-overlay'); if(old) old.remove();
+  const sup = state.suppliers.find(s=>s.id===req.supplierId);
+  const supName = sup ? sup.name : req.supplierName;
+  const overlay = document.createElement('div');
+  overlay.id = 'conf-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9998;display:flex;align-items:flex-end;justify-content:center;overflow-y:auto';
+
+  const itemRows = req.items.map((item,idx)=>{
+    const exists = state.inventory.find(i=>i.name.toLowerCase()===item.name.toLowerCase());
+    return `<div style="background:${exists?'var(--green-lt)':'var(--blue-lt)'};border:1px solid ${exists?'#86efac':'#93c5fd'};border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-weight:600;font-size:14px">${item.name}</span>
+        <span class="badge-gs ${exists?'badge-ok':'badge-info'}" style="font-size:10px">${exists?'Update existing':'Create new item'}</span>
+      </div>
+      <div class="row g-2">
+        <div class="col-4 col-sm-3">
+          <label class="form-label">Qty received</label>
+          <input type="number" class="form-control" id="conf-qty-${idx}" value="${item.qty}" min="0" step="0.01" inputmode="decimal">
+        </div>
+        <div class="col-4 col-sm-2">
+          <label class="form-label">Unit</label>
+          <input type="text" class="form-control" id="conf-unit-${idx}" value="${item.unit}">
+        </div>
+        <div class="col-4 col-sm-3">
+          <label class="form-label">Actual cost ₹</label>
+          <input type="number" class="form-control" id="conf-cost-${idx}" value="${item.estCost||''}" placeholder="0.00" step="0.01" inputmode="decimal">
+        </div>
+        ${!exists?`<div class="col-12 col-sm-4">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="conf-cat-${idx}">
+            ${['Grains & Pulses','Dairy','Vegetables','Fruits','Snacks','Beverages','Spices','Oils','Other'].map(c=>`<option${c===item.cat?' selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>`:`<div class="col-12 col-sm-4" style="display:flex;align-items:flex-end;padding-bottom:2px">
+          <span style="font-size:12px;color:var(--green)"><i class="bi bi-arrow-up-circle"></i> Will add to existing stock</span>
+        </div>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  overlay.innerHTML = `
+    <div style="background:#fff;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:24px 20px 32px;box-shadow:0 -4px 40px rgba(0,0,0,.2)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <h3 style="font-size:17px;font-weight:700"><i class="bi bi-truck-front" style="color:var(--green)"></i> Confirm Delivery</h3>
+        <button onclick="document.getElementById('conf-modal-overlay').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b">×</button>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Supplier: <strong>${supName}</strong> · Requested: ${req.date}</p>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px">Review received quantities and costs:</div>
+      ${itemRows}
+      <div style="background:var(--amber-lt);border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--amber);margin:12px 0">
+        <i class="bi bi-info-circle-fill"></i> Green items will update existing stock. Blue items will be created as new inventory entries (sell price = ₹0 — remember to set it after confirming).
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+        <button class="btn-gs btn-outline-gs" onclick="document.getElementById('conf-modal-overlay').remove()">Cancel</button>
+        <button class="btn-gs btn-primary-gs" onclick="confirmRequest('${reqId}')"><i class="bi bi-check-lg"></i> Confirm &amp; Update Inventory</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+}
+
+// ── CONFIRM REQUEST — core logic ──
+// For each item in the request:
+//   - If item exists in inventory → add qty, optionally update cost
+//   - If new → create inventory entry with defaults
+//   - Also push to state.purchases for historical record
+//   - Mark request as completed
+function confirmRequest(reqId) {
+  const req = state.supplierRequests.find(r=>r.id===reqId);
+  if (!req) return;
+  if (req.status !== 'pending') { toast('This request is already '+req.status,'error'); return; }
+
+  const sup = state.suppliers.find(s=>s.id===req.supplierId);
+  const supName = sup ? sup.name : req.supplierName;
+  let newItemsCount = 0, updatedCount = 0;
+
+  req.items.forEach((item, idx) => {
+    const qtyEl   = document.getElementById('conf-qty-'+idx);
+    const unitEl  = document.getElementById('conf-unit-'+idx);
+    const costEl  = document.getElementById('conf-cost-'+idx);
+    const catEl   = document.getElementById('conf-cat-'+idx);
+
+    const qty      = parseFloat(qtyEl  ? qtyEl.value  : item.qty)  || 0;
+    const unit     = unitEl  ? unitEl.value.trim()  : item.unit;
+    const totalCost= parseFloat(costEl ? costEl.value : item.estCost) || 0;
+    const cat      = catEl   ? catEl.value           : item.cat || 'Other';
+    const unitCost = qty > 0 && totalCost > 0 ? parseFloat((totalCost/qty).toFixed(4)) : 0;
+
+    if (qty <= 0) return; // skip zero-qty items
+
+    // Update or create inventory
+    const existing = state.inventory.find(i=>i.name.toLowerCase()===item.name.toLowerCase());
+    if (existing) {
+      existing.qty += qty;
+      if (unitCost > 0) existing.cost = unitCost; // update cost to latest
+      updatedCount++;
+    } else {
+      state.inventory.push({
+        id:     Math.floor(Date.now()) + idx + 1,   // integer ID — no float
+        name:   item.name,
+        cat:    cat,
+        qty:    qty,
+        unit:   unit,
+        cost:   unitCost,
+        sell:   0,    // default — user must set sell price
+        mrp:    0,
+        alert:  5,
+        expiry: ''
+      });
+      newItemsCount++;
+    }
+
+    // Record in purchases history (same as manual purchase entry)
+    state.purchases.push({
+      id:         Math.floor(Date.now()) + idx + 2,  // integer ID
+      supplierId: req.supplierId,
+      supplier:   supName,
+      item:       item.name,
+      qty:        qty,
+      unit:       unit,
+      cost:       totalCost,
+      invoice:    req.id, // use request ID as reference
+      date:       new Date().toISOString().slice(0,10),
+      fromRequest: reqId  // back-reference
+    });
+  });
+
+  // Mark request as completed
+  req.status      = 'completed';
+  req.confirmedAt = new Date().toISOString();
+
+  save();
+  document.getElementById('conf-modal-overlay').remove();
+
+  let msg = `Delivery confirmed! `;
+  if (updatedCount > 0) msg += `${updatedCount} item${updatedCount!==1?'s':''} restocked. `;
+  if (newItemsCount > 0) msg += `${newItemsCount} new item${newItemsCount!==1?'s':''} created.`;
+  toast(msg.trim());
+
+  if (newItemsCount > 0) {
+    setTimeout(()=>toast('Remember to set selling prices for new items in Inventory tab','error'), 800);
+  }
+
+  renderAll();
+}
+
+// ── CANCEL REQUEST ──
+function cancelRequest(reqId) {
+  const req = state.supplierRequests.find(r=>r.id===reqId);
+  if (!req) return;
+  if (req.status==='completed') { toast('Cannot cancel a completed request','error'); return; }
+  if (!confirm('Cancel this purchase request? This cannot be undone.')) return;
+  req.status = 'cancelled';
+  save(); toast('Request cancelled'); renderAll();
+}
+
+// ── DELETE REQUEST ──
+function deleteRequest(reqId) {
+  const req = state.supplierRequests.find(r=>r.id===reqId);
+  if (!req) return;
+  if (req.status==='pending') {
+    if (!confirm('Delete this pending request? It has not been confirmed yet.')) return;
+  } else {
+    if (!confirm('Delete this request record?')) return;
+  }
+  state.supplierRequests = state.supplierRequests.filter(r=>r.id!==reqId);
+  save(); toast('Request deleted'); renderAll();
+}
+
+// ── EDIT REQUEST (pending only) ──
+function openEditRequestModal(reqId) {
+  const req = state.supplierRequests.find(r=>r.id===reqId); if(!req) return;
+  if (req.status!=='pending') { toast('Only pending requests can be edited','error'); return; }
+
+  var old = document.getElementById('req-modal-overlay'); if(old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'req-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9998;display:flex;align-items:flex-end;justify-content:center;overflow-y:auto';
+  overlay.innerHTML = `
+    <div id="req-modal-box" style="background:#fff;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:24px 20px 32px;box-shadow:0 -4px 40px rgba(0,0,0,.2)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <h3 style="font-size:17px;font-weight:700"><i class="bi bi-pencil-square" style="color:var(--amber)"></i> Edit Request</h3>
+        <button onclick="document.getElementById('req-modal-overlay').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b">×</button>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-sm-6">
+          <label class="form-label">Supplier ★</label>
+          <select class="form-select" id="req-supplier">${buildSupplierOpts(req.supplierId)}</select>
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label">Request date</label>
+          <input type="date" class="form-control" id="req-date" value="${req.date}">
+        </div>
+        <div class="col-6 col-sm-3">
+          <label class="form-label">Expected delivery</label>
+          <input type="date" class="form-control" id="req-delivery" value="${req.deliveryDate||''}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notes</label>
+          <input type="text" class="form-control" id="req-notes" value="${req.notes||''}">
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px">Items to order</div>
+      <div id="req-items-container"></div>
+      <div id="req-total-bar" style="display:none;margin:10px 0;padding:10px 14px;background:var(--surface);border-radius:8px;border:1px solid var(--border);font-size:13px">
+        <span style="color:var(--muted)">Items: <strong id="rq-count">0</strong></span>
+        <span style="margin-left:20px;color:var(--muted)">Est. total: <strong id="rq-total" style="font-family:'DM Mono',monospace;color:var(--ink)">₹0.00</strong></span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+        <button class="btn-gs btn-outline-gs" onclick="document.getElementById('req-modal-overlay').remove()">Cancel</button>
+        <button class="btn-gs btn-primary-gs" onclick="saveEditRequest('${reqId}')"><i class="bi bi-check-lg"></i> Save changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+
+  // Seed modal rows from existing request items
+  modalReqRows = req.items.map((item, idx) => ({
+    rowId:   idx+1, name: item.name, qty: item.qty,
+    unit:    item.unit, estCost: item.estCost||0, cat: item.cat||'Other'
+  }));
+  modalReqNextId = req.items.length + 1;
+  renderModalReqRows();
+}
+
+function saveEditRequest(reqId) {
+  const req = state.supplierRequests.find(r=>r.id===reqId); if(!req) return;
+  const supId    = parseInt(document.getElementById('req-supplier').value);
+  const date     = document.getElementById('req-date').value;
+  const delivery = document.getElementById('req-delivery').value;
+  const notes    = document.getElementById('req-notes').value.trim();
+
+  if (!supId) { toast('Please select a supplier','error'); return; }
+  if (!date)  { toast('Select a request date','error'); return; }
+
+  const validItems = modalReqRows.filter(r=>r.name.trim()&&r.qty>0);
+  if (validItems.length===0) { toast('Add at least one item','error'); return; }
+
+  const names = validItems.map(r=>r.name.trim().toLowerCase());
+  const dupes = names.filter((n,i)=>names.indexOf(n)!==i);
+  if (dupes.length>0) { toast(`Duplicate item: "${dupes[0]}"`, 'error'); return; }
+
+  const sup = state.suppliers.find(s=>s.id===supId);
+  req.supplierId   = supId;
+  req.supplierName = sup ? sup.name : '';
+  req.date         = date;
+  req.deliveryDate = delivery;
+  req.notes        = notes;
+  req.items        = validItems.map(r=>({ name:r.name.trim(), qty:r.qty, unit:r.unit, estCost:r.estCost||0, cat:r.cat||'Other' }));
+
+  save();
+  toast('Request updated');
+  document.getElementById('req-modal-overlay').remove();
+  renderAll();
+}
+
+// ── RENDER REQUESTS LIST ──
+let expandedReqs = new Set(); // track which request cards are expanded
+
+function toggleReqExpand(reqId) {
+  if (expandedReqs.has(reqId)) expandedReqs.delete(reqId);
+  else expandedReqs.add(reqId);
+  renderRequestsList();
+}
+
+function renderRequestsList() {
+  const el = document.getElementById('requests-list'); if(!el) return;
+  const all = state.supplierRequests || [];
+
+  const filtered = currentReqFilter==='all' ? all
+    : all.filter(r=>r.status===currentReqFilter);
+
+  const sorted = filtered.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+
+  if (sorted.length===0) {
+    el.innerHTML = `<div class="empty-state"><i class="bi bi-clipboard"></i>${
+      currentReqFilter==='all' ? 'No purchase requests yet. Click "New Request" to create one.'
+      : 'No '+currentReqFilter+' requests.'
+    }</div>`;
+    return;
+  }
+
+  el.innerHTML = sorted.map(req => {
+    const sup = state.suppliers.find(s=>s.id===req.supplierId);
+    const supName  = sup ? sup.name : (req.supplierName||'Unknown supplier');
+    const estTotal = req.items.reduce((s,i)=>s+(i.estCost||0),0);
+    const isExpanded = expandedReqs.has(req.id);
+    const statusBadge = {
+      pending:   '<span class="badge-gs badge-pending">⏳ Pending</span>',
+      completed: '<span class="badge-gs badge-completed">✓ Completed</span>',
+      cancelled: '<span class="badge-gs badge-cancelled">✕ Cancelled</span>'
+    }[req.status] || '';
+
+    const headerHTML = `
+      <div class="req-card-header" onclick="toggleReqExpand('${req.id}')">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-weight:600;font-size:14px">${supName}</span>
+            ${statusBadge}
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:3px">
+            ${req.date}${req.deliveryDate?' → '+req.deliveryDate:''}
+            · ${req.items.length} item${req.items.length!==1?'s':''}
+            ${estTotal>0?'· Est. '+fmt(estTotal):''}
+            ${req.notes?`<span style="margin-left:6px;font-style:italic">"${req.notes.slice(0,40)}${req.notes.length>40?'…':''}"</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          ${req.status==='pending'
+            ? `<button class="btn-gs btn-primary-gs btn-sm-gs" onclick="event.stopPropagation();openConfirmRequestModal('${req.id}')"><i class="bi bi-truck-front"></i> Confirm Delivery</button>
+               <button class="btn-gs btn-sm-gs" style="background:#e0f2fe;color:#0369a1" onclick="event.stopPropagation();openEditRequestModal('${req.id}')"><i class="bi bi-pencil"></i></button>
+               <button class="btn-gs btn-danger-gs btn-sm-gs" onclick="event.stopPropagation();cancelRequest('${req.id}')"><i class="bi bi-x-lg"></i></button>`
+            : `<button class="btn-gs btn-danger-gs btn-sm-gs" onclick="event.stopPropagation();deleteRequest('${req.id}')"><i class="bi bi-trash3"></i></button>`
+          }
+          <i class="bi bi-chevron-${isExpanded?'up':'down'}" style="color:var(--muted);font-size:16px"></i>
+        </div>
+      </div>`;
+
+    const bodyHTML = isExpanded ? `
+      <div class="req-card-body">
+        ${req.confirmedAt?`<div style="font-size:12px;color:var(--green);margin-bottom:10px"><i class="bi bi-check-circle-fill"></i> Confirmed on ${new Date(req.confirmedAt).toLocaleDateString('en-IN')}</div>`:''}
+        <div class="gs-table-wrap desktop-table">
+          <table class="gs-table"><thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Est. Cost</th><th>Status</th></tr></thead><tbody>
+            ${req.items.map(item=>{
+              const exists = state.inventory.find(i=>i.name.toLowerCase()===item.name.toLowerCase());
+              return `<tr>
+                <td style="font-weight:600">${item.name}</td>
+                <td>${item.qty}</td>
+                <td>${item.unit}</td>
+                <td style="font-family:'DM Mono',monospace;color:var(--muted)">${item.estCost?fmt(item.estCost):'—'}</td>
+                <td><span class="badge-gs ${exists?'badge-ok':'badge-info'}" style="font-size:10px">${exists?'In stock':'New item'}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody></table>
+        </div>
+        <div class="mobile-list">
+          ${req.items.map(item=>{
+            const exists = state.inventory.find(i=>i.name.toLowerCase()===item.name.toLowerCase());
+            return `<div class="mc">
+              <div class="mc-top">
+                <span class="mc-name">${item.name}</span>
+                <span class="badge-gs ${exists?'badge-ok':'badge-info'}" style="font-size:10px">${exists?'In stock':'New item'}</span>
+              </div>
+              <div class="mc-meta">
+                <span>${item.qty} ${item.unit}</span>
+                ${item.estCost?`<span>Est: ${fmt(item.estCost)}</span>`:''}
+                ${item.cat&&item.cat!=='Other'?`<span>${item.cat}</span>`:''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : '';
+
+    return `<div class="req-card">${headerHTML}${bodyHTML}</div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  WIRE UP NAV
+// ═══════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('[data-page]').forEach(function(btn) {
     btn.addEventListener('click', function() { switchPage(btn.getAttribute('data-page')); });
   });
-  var exportBtn=document.getElementById('btn-export'); if(exportBtn) exportBtn.addEventListener('click',exportCSV);
-  var clearBtn=document.getElementById('btn-clear');   if(clearBtn)  clearBtn.addEventListener('click',clearAllData);
-  // initialise the multi-item sale form
+  var exportBtn = document.getElementById('btn-export'); if(exportBtn) exportBtn.addEventListener('click',exportCSV);
+  var clearBtn  = document.getElementById('btn-clear');  if(clearBtn)  clearBtn.addEventListener('click',clearAllData);
   initSaleRows();
 });
 </script>
