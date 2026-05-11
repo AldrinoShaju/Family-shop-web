@@ -178,7 +178,8 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
         <div class="col-3 col-sm-2 col-md-1"><label class="form-label">Unit</label><select class="form-select" id="inv-unit"><option>kg</option><option>litre</option><option>packet</option><option>piece</option><option>box</option></select></div>
         <div class="col-6 col-sm-4 col-md-2"><label class="form-label">Cost price (₹)</label><input type="number" class="form-control" id="inv-cost" placeholder="0.00" step="0.01" inputmode="decimal"></div>
         <div class="col-6 col-sm-4 col-md-2"><label class="form-label">Selling price (₹)</label><input type="number" class="form-control" id="inv-sell" placeholder="0.00" step="0.01" inputmode="decimal"></div>
-        <div class="col-12 col-sm-2 col-md-1"><label class="form-label">Alert at</label><input type="number" class="form-control" id="inv-alert" placeholder="5" min="0" inputmode="numeric"></div>
+        <div class="col-6 col-sm-4 col-md-2"><label class="form-label">MRP (₹)</label><input type="number" class="form-control" id="inv-mrp" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+        <div class="col-6 col-sm-2 col-md-1"><label class="form-label">Alert at</label><input type="number" class="form-control" id="inv-alert" placeholder="5" min="0" inputmode="numeric"></div>
       </div>
       <div class="mt-3"><button class="btn-gs btn-primary-gs" onclick="addInventory()"><i class="bi bi-plus-lg"></i> Add Item</button></div>
     </div>
@@ -188,16 +189,26 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
   <div id="page-sales" class="page">
     <div class="page-header"><div><h2>Sales</h2><p>Record and track daily sales</p></div></div>
     <div class="c-card">
-      <div class="c-card-title"><i class="bi bi-cart-plus"></i> Record a Sale</div>
-      <div class="row g-3 align-items-start">
-        <div class="col-12 col-md-4"><label class="form-label">Item</label><select class="form-select" id="sale-item" onchange="onSaleItemChange()"><option value="">Select item...</option></select></div>
-        <div class="col-6 col-md-2">
-          <label class="form-label">Quantity sold</label>
-          <input type="number" class="form-control" id="sale-qty" placeholder="0" min="1" step="1" inputmode="numeric">
-          <div id="sale-qty-hint" style="font-size:11px;color:var(--muted);margin-top:5px;min-height:16px;line-height:1.4"></div>
+      <div class="c-card-title"><i class="bi bi-cart-plus"></i> New Transaction</div>
+      <!-- Date row -->
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+          <label class="form-label">Transaction date</label>
+          <input type="date" class="form-control" id="sale-date">
         </div>
-        <div class="col-6 col-md-3"><label class="form-label">Date</label><input type="date" class="form-control" id="sale-date"></div>
-        <div class="col-12 col-md-3"><label class="form-label" style="visibility:hidden">Record</label><button class="btn-gs btn-primary-gs w-100" style="display:block" onclick="recordSale()"><i class="bi bi-check2-circle"></i> Record Sale</button></div>
+      </div>
+      <!-- Dynamic item rows -->
+      <div id="sale-items-container"></div>
+      <!-- Running total -->
+      <div id="sale-total-bar" style="display:none;margin-top:12px;padding:12px 16px;background:var(--green-lt);border-radius:10px;border:1px solid #86efac">
+        <div style="display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center">
+          <span style="font-size:13px;color:var(--muted)">Items: <strong id="st-count" style="color:var(--ink)">0</strong></span>
+          <span style="font-size:13px;color:var(--muted)">Total revenue: <strong id="st-revenue" style="color:var(--green);font-family:'DM Mono',monospace">₹0.00</strong></span>
+          <span style="font-size:13px;color:var(--muted)">Total profit: <strong id="st-profit" style="font-family:'DM Mono',monospace">₹0.00</strong></span>
+        </div>
+      </div>
+      <div class="mt-3">
+        <button class="btn-gs btn-primary-gs" onclick="recordSale()"><i class="bi bi-check2-circle"></i> Record Transaction</button>
       </div>
     </div>
     <div class="c-card"><div class="c-card-title"><i class="bi bi-journal-text"></i> Sales History</div><div id="sales-table"></div></div>
@@ -320,12 +331,13 @@ function switchPage(id) {
 function addInventory() {
   const name=document.getElementById('inv-name').value.trim(), qty=parseFloat(document.getElementById('inv-qty').value)||0;
   const cost=parseFloat(document.getElementById('inv-cost').value)||0, sell=parseFloat(document.getElementById('inv-sell').value)||0;
+  const mrp=parseFloat(document.getElementById('inv-mrp').value)||0;
   const alert=parseFloat(document.getElementById('inv-alert').value)||5;
   if (!name) { document.getElementById('inv-name').focus(); toast('Please enter an item name','error'); return; }
   const existing = state.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase());
-  if (existing) { existing.qty+=qty; if(cost)existing.cost=cost; if(sell)existing.sell=sell; existing.alert=alert; toast(`"${name}" restocked (+${qty} ${existing.unit})`); }
-  else { state.inventory.push({id:Date.now(),name,cat:document.getElementById('inv-cat').value,qty,unit:document.getElementById('inv-unit').value,cost,sell,alert}); toast(`"${name}" added to inventory`); }
-  save(); ['inv-name','inv-qty','inv-cost','inv-sell','inv-alert'].forEach(id=>document.getElementById(id).value=''); renderAll();
+  if (existing) { existing.qty+=qty; if(cost)existing.cost=cost; if(sell)existing.sell=sell; if(mrp)existing.mrp=mrp; existing.alert=alert; toast(`"${name}" restocked (+${qty} ${existing.unit})`); }
+  else { state.inventory.push({id:Date.now(),name,cat:document.getElementById('inv-cat').value,qty,unit:document.getElementById('inv-unit').value,cost,sell,mrp,alert}); toast(`"${name}" added to inventory`); }
+  save(); ['inv-name','inv-qty','inv-cost','inv-sell','inv-mrp','inv-alert'].forEach(id=>document.getElementById(id).value=''); renderAll();
 }
 
 function updateStock(id,delta) {
@@ -339,44 +351,181 @@ function deleteItem(id) {
   state.inventory=state.inventory.filter(i=>i.id!==id); save(); toast('Item deleted'); renderAll();
 }
 
-function populateSaleDropdown() {
-  const sel=document.getElementById('sale-item'); if(!sel) return;
-  const cur=sel.value; sel.innerHTML='<option value="">Select item...</option>';
-  state.inventory.filter(i=>i.qty>0).forEach(i=>{
-    const o=document.createElement('option'); o.value=i.id;
-    o.textContent=`${i.name} (${i.qty} ${i.unit}) — ${fmt(i.sell)}`;
-    if(i.id==cur) o.selected=true; sel.appendChild(o);
-  });
+// ── MULTI-ITEM TRANSACTION SYSTEM ──
+const DECIMAL_UNITS=['kg','litre'];
+let saleRows = []; // [{rowId, itemId, qty}]
+let nextRowId = 1;
+
+function initSaleRows() {
+  saleRows = [];
+  nextRowId = 1;
+  addSaleRow();
+  updateTotalBar();
 }
 
-const DECIMAL_UNITS=['kg','litre'];
+function addSaleRow() {
+  const rowId = nextRowId++;
+  saleRows.push({ rowId, itemId: null, qty: 0 });
+  renderSaleRows();
+}
+
+function renderSaleRows() {
+  const container = document.getElementById('sale-items-container');
+  if (!container) return;
+  container.innerHTML = saleRows.map((row, idx) => {
+    const itemOpts = state.inventory.filter(i=>i.qty>0)
+      .map(i=>`<option value="${i.id}"${i.id===row.itemId?' selected':''}>${i.name} (${i.qty} ${i.unit}) — ${fmt(i.sell)}</option>`).join('');
+    const item = row.itemId ? state.inventory.find(i=>i.id===row.itemId) : null;
+    const dec = item ? DECIMAL_UNITS.includes(item.unit) : false;
+    const lineTotal = item && row.qty > 0 ? parseFloat((row.qty * item.sell).toFixed(2)) : 0;
+    const canRemove = saleRows.length > 1;
+    return `<div class="sale-row" id="sale-row-${row.rowId}" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+      <div class="row g-2 align-items-start">
+        <div class="col-12 col-md-5">
+          ${idx===0?'<label class="form-label">Item</label>':''}
+          <select class="form-select" onchange="onSaleRowItemChange(${row.rowId}, this.value)">
+            <option value="">Select item...</option>
+            ${itemOpts}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          ${idx===0?'<label class="form-label">Quantity</label>':''}
+          <input type="number" class="form-control" placeholder="0" min="0"
+            step="${dec?'0.1':'1'}" inputmode="${dec?'decimal':'numeric'}"
+            value="${row.qty||''}"
+            onchange="onSaleRowQtyChange(${row.rowId}, this.value)"
+            oninput="onSaleRowQtyChange(${row.rowId}, this.value)">
+          ${item?`<div style="font-size:10px;color:var(--muted);margin-top:3px">${dec?'Decimals OK':'Whole numbers only'} (${item.unit})</div>`:''}
+        </div>
+        <div class="col-6 col-md-3" style="display:flex;align-items:${idx===0?'flex-end':'center'}">
+          ${idx===0?'<label class="form-label" style="visibility:hidden;display:block;margin-bottom:6px">Line</label>':''}
+          <div style="width:100%">
+            ${item && row.qty > 0
+              ? `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">
+                  <span style="color:var(--muted)">Line total: </span>
+                  <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(lineTotal)}</strong>
+                  ${item.mrp?`<span style="margin-left:8px;font-size:11px;color:var(--muted)">MRP: ${fmt(item.mrp)}</span>`:''}
+                </div>`
+              : `<div style="height:38px;display:flex;align-items:center;padding:0 12px;font-size:12px;color:var(--muted)">${item?'Enter quantity':'Select an item'}</div>`
+            }
+          </div>
+        </div>
+        <div class="col-12 col-md-2" style="display:flex;align-items:${idx===0?'flex-end':'center'};gap:6px">
+          ${canRemove?`<button class="btn-gs btn-danger-gs btn-sm-gs" onclick="removeSaleRow(${row.rowId})" title="Remove row"><i class="bi bi-x-lg"></i></button>`:'<div style="width:38px"></div>'}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Show "Add another item" button only if the last row has an item selected
+  const lastRow = saleRows[saleRows.length - 1];
+  if (lastRow && lastRow.itemId) {
+    container.innerHTML += `<button class="btn-gs btn-outline-gs btn-sm-gs" style="margin-top:4px" onclick="addSaleRow()"><i class="bi bi-plus-lg"></i> Add another item</button>`;
+  }
+  updateTotalBar();
+}
+
+function onSaleRowItemChange(rowId, val) {
+  const row = saleRows.find(r=>r.rowId===rowId); if(!row) return;
+  row.itemId = val ? parseInt(val) : null;
+  row.qty = 0;
+  renderSaleRows();
+}
+
+function onSaleRowQtyChange(rowId, val) {
+  const row = saleRows.find(r=>r.rowId===rowId); if(!row) return;
+  const item = row.itemId ? state.inventory.find(i=>i.id===row.itemId) : null;
+  const dec = item ? DECIMAL_UNITS.includes(item.unit) : false;
+  row.qty = dec ? parseFloat(val)||0 : parseInt(val)||0;
+  updateTotalBar();
+  // re-render only the line total part without full re-render (for smooth typing)
+  const lineDiv = document.querySelector(`#sale-row-${rowId} .col-md-3 > div`);
+  if (lineDiv && item) {
+    const lineTotal = row.qty > 0 ? parseFloat((row.qty * item.sell).toFixed(2)) : 0;
+    lineDiv.innerHTML = row.qty > 0
+      ? `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">
+          <span style="color:var(--muted)">Line total: </span>
+          <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(lineTotal)}</strong>
+          ${item.mrp?`<span style="margin-left:8px;font-size:11px;color:var(--muted)">MRP: ${fmt(item.mrp)}</span>`:''}
+         </div>`
+      : `<div style="height:38px;display:flex;align-items:center;padding:0 12px;font-size:12px;color:var(--muted)">Enter quantity</div>`;
+  }
+}
+
+function removeSaleRow(rowId) {
+  saleRows = saleRows.filter(r=>r.rowId!==rowId);
+  if (saleRows.length === 0) addSaleRow();
+  else renderSaleRows();
+}
+
+function updateTotalBar() {
+  const bar = document.getElementById('sale-total-bar'); if(!bar) return;
+  let totalRev = 0, totalProfit = 0, count = 0;
+  saleRows.forEach(row => {
+    if (!row.itemId || !row.qty) return;
+    const item = state.inventory.find(i=>i.id===row.itemId); if(!item) return;
+    totalRev   += row.qty * item.sell;
+    totalProfit+= row.qty * (item.sell - item.cost);
+    count++;
+  });
+  if (count === 0) { bar.style.display='none'; return; }
+  bar.style.display='block';
+  document.getElementById('st-count').textContent = count;
+  document.getElementById('st-revenue').textContent = fmt(totalRev);
+  const profitEl = document.getElementById('st-profit');
+  profitEl.textContent = fmt(totalProfit);
+  profitEl.style.color = totalProfit >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+function populateSaleDropdown() {
+  // no-op: sale dropdowns are rendered inline in renderSaleRows
+}
 
 function onSaleItemChange() {
-  const id=parseInt(document.getElementById('sale-item').value);
-  const qi=document.getElementById('sale-qty'), hint=document.getElementById('sale-qty-hint');
-  if(!id){qi.step='1';qi.value='';if(hint)hint.textContent='';return;}
-  const item=state.inventory.find(i=>i.id===id); if(!item) return;
-  const dec=DECIMAL_UNITS.includes(item.unit);
-  qi.step=dec?'0.1':'1'; qi.inputMode=dec?'decimal':'numeric'; qi.value='';
-  if(hint) hint.textContent=dec?`Enter in ${item.unit} (decimals allowed, e.g. 1.5)`:`Enter whole number only (${item.unit} cannot be split)`;
+  // no-op: handled by onSaleRowItemChange
 }
 
 function recordSale() {
-  const id=parseInt(document.getElementById('sale-item').value), date=document.getElementById('sale-date').value;
-  if(!id){toast('Select an item','error');return;}
-  const item=state.inventory.find(i=>i.id===id); if(!item) return;
-  const dec=DECIMAL_UNITS.includes(item.unit), raw=document.getElementById('sale-qty').value;
-  const qty=dec?parseFloat(raw):parseInt(raw);
-  if(!qty||qty<=0){toast('Enter a valid quantity','error');return;}
-  if(!dec&&raw.includes('.')){toast(`${item.unit} must be a whole number!`,'error');return;}
-  if(item.qty<qty){toast(`Only ${item.qty} ${item.unit} in stock!`,'error');return;}
-  item.qty=parseFloat((item.qty-qty).toFixed(4));
-  const revenue=parseFloat((qty*item.sell).toFixed(2)), cost=parseFloat((qty*item.cost).toFixed(2));
-  state.sales.push({id:Date.now(),itemId:id,itemName:item.name,qty,unit:item.unit,sell:item.sell,cost:item.cost,revenue,profit:parseFloat((revenue-cost).toFixed(2)),date});
-  save(); toast(`Sale recorded — ${fmt(revenue)} revenue`);
-  document.getElementById('sale-qty').value='';
-  const hint=document.getElementById('sale-qty-hint');
-  if(hint) hint.textContent=dec?`Enter in ${item.unit} (decimals allowed)`:`Whole number only (${item.unit} cannot be split)`;
+  const date = document.getElementById('sale-date').value;
+  if (!date) { toast('Select a date','error'); return; }
+
+  // validate all rows
+  const validRows = saleRows.filter(r => r.itemId && r.qty > 0);
+  if (validRows.length === 0) { toast('Add at least one item with quantity','error'); return; }
+
+  const txnId = 'TXN-' + Date.now();
+  let errors = [];
+
+  validRows.forEach(row => {
+    const item = state.inventory.find(i=>i.id===row.itemId);
+    if (!item) return;
+    const dec = DECIMAL_UNITS.includes(item.unit);
+    if (!dec && String(row.qty).includes('.')) { errors.push(`${item.name}: must be whole number`); return; }
+    if (item.qty < row.qty) { errors.push(`${item.name}: only ${item.qty} ${item.unit} in stock`); return; }
+  });
+
+  if (errors.length > 0) { toast(errors[0], 'error'); return; }
+
+  let totalRevenue = 0;
+  validRows.forEach(row => {
+    const item = state.inventory.find(i=>i.id===row.itemId);
+    const qty = row.qty;
+    item.qty = parseFloat((item.qty - qty).toFixed(4));
+    const revenue = parseFloat((qty * item.sell).toFixed(2));
+    const cost    = parseFloat((qty * item.cost).toFixed(2));
+    totalRevenue += revenue;
+    state.sales.push({
+      id: Date.now() + Math.random(),
+      txnId,
+      itemId: item.id, itemName: item.name,
+      qty, unit: item.unit, sell: item.sell, cost: item.cost,
+      revenue, profit: parseFloat((revenue-cost).toFixed(2)), date
+    });
+  });
+
+  save();
+  toast(`Transaction recorded — ${fmt(totalRevenue)} total`);
+  initSaleRows(); // reset form
   renderAll();
 }
 
@@ -518,9 +667,11 @@ function clearAllData() {
 function renderAll() {
   renderDashboard(); renderInventoryTable(); renderSalesTable();
   renderSuppliersTable(); renderSupplierContacts(); renderPnL();
-  populateSaleDropdown(); populateSupplierDropdown();
+  populateSupplierDropdown();
   var supSel=document.getElementById('sup-contact-sel');
   if(supSel) supSel.onchange=onSupplierContactChange;
+  // refresh sale row dropdowns if sale page is visible
+  if(document.getElementById('page-sales').classList.contains('active')) renderSaleRows();
 }
 
 function renderDashboard() {
@@ -567,13 +718,14 @@ function renderInventoryTable() {
     const margin=i.sell>0?((i.sell-i.cost)/i.sell*100).toFixed(0):0, low=i.qty<=i.alert, noSell=i.sell<=0;
     return {i,margin,low,noSell};
   });
-  const desktopHTML=`<div class="gs-table-wrap desktop-table"><table class="gs-table"><thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Cost ₹</th><th>Sell ₹</th><th>Margin</th><th>Alert at</th><th>Status</th><th>Actions</th></tr></thead><tbody>`
+  const desktopHTML=`<div class="gs-table-wrap desktop-table"><table class="gs-table"><thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Cost ₹</th><th>Sell ₹</th><th>MRP ₹</th><th>Margin</th><th>Alert at</th><th>Status</th><th>Actions</th></tr></thead><tbody>`
     +rows.map(({i,margin,low,noSell})=>`<tr style="${noSell?'background:#fffbeb':''}">
       <td style="font-weight:600">${i.name}${noSell?'<span style="margin-left:6px;font-size:11px;color:#d97706;font-weight:500">⚠ set price</span>':''}</td>
       <td><span class="badge-gs badge-info">${i.cat}</span></td>
       <td style="font-family:'DM Mono',monospace">${i.qty} ${i.unit}</td>
       <td style="font-family:'DM Mono',monospace;color:var(--muted)">${fmt(i.cost)}</td>
       <td style="font-family:'DM Mono',monospace;color:${noSell?'var(--amber)':'inherit'}">${noSell?'—':fmt(i.sell)}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--muted)">${i.mrp?fmt(i.mrp):'—'}</td>
       <td style="color:${margin>20?'var(--green)':'var(--amber)'};font-weight:600">${margin}%</td>
       <td style="color:var(--muted);font-size:13px">${i.alert} ${i.unit}</td>
       <td><span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span></td>
@@ -585,7 +737,7 @@ function renderInventoryTable() {
       </td></tr>`).join('')+'</tbody></table></div>';
   const mobileHTML='<div class="mobile-list">'+rows.map(({i,margin,low,noSell})=>`<div class="mc" style="${noSell?'background:#fffbeb':''}">
     <div class="mc-top"><span class="mc-name">${i.name}${noSell?'<span style="font-size:10px;color:var(--amber);margin-left:5px">⚠ set price</span>':''}</span><span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span></div>
-    <div class="mc-meta"><span>${i.qty} ${i.unit}</span><span>Cost: ${fmt(i.cost)}</span><span>Sell: ${noSell?'—':fmt(i.sell)}</span><span>Margin: ${margin}%</span><span class="badge-gs badge-info">${i.cat}</span></div>
+    <div class="mc-meta"><span>${i.qty} ${i.unit}</span><span>Cost: ${fmt(i.cost)}</span><span>Sell: ${noSell?'—':fmt(i.sell)}</span>${i.mrp?`<span>MRP: ${fmt(i.mrp)}</span>`:''}<span>Margin: ${margin}%</span><span class="badge-gs badge-info">${i.cat}</span></div>
     <div class="mc-actions">
       <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},-1)">−1</button>
       <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},1)">+1</button>
@@ -613,6 +765,7 @@ function openEditModal(id) {
       <div><label class="form-label">Unit</label><select class="form-select" id="em-unit">${units.map(u=>`<option${u===i.unit?' selected':''}>${u}</option>`).join('')}</select></div>
       <div><label class="form-label">Cost price (₹)</label><input class="form-control" type="number" id="em-cost" value="${i.cost}" step="0.01" inputmode="decimal"></div>
       <div><label class="form-label" style="color:#16a34a;font-weight:700">Selling price (₹) ★</label><input class="form-control" type="number" id="em-sell" value="${i.sell}" step="0.01" inputmode="decimal" style="border-color:#16a34a"></div>
+      <div><label class="form-label">MRP (₹)</label><input class="form-control" type="number" id="em-mrp" value="${i.mrp||''}" placeholder="0.00" step="0.01" inputmode="decimal"></div>
       <div><label class="form-label">Low stock alert at</label><input class="form-control" type="number" id="em-alert" value="${i.alert}" min="0" inputmode="numeric"></div>
     </div>
     <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
@@ -629,6 +782,7 @@ function saveEdit(id) {
   i.cat=document.getElementById('em-cat').value; i.unit=document.getElementById('em-unit').value;
   i.cost=parseFloat(document.getElementById('em-cost').value)||0;
   i.sell=parseFloat(document.getElementById('em-sell').value)||0;
+  i.mrp=parseFloat(document.getElementById('em-mrp').value)||0;
   i.alert=parseFloat(document.getElementById('em-alert').value)||5;
   document.getElementById('edit-modal-overlay').remove(); save(); toast('Item updated successfully'); renderAll();
 }
@@ -682,6 +836,8 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   var exportBtn=document.getElementById('btn-export'); if(exportBtn) exportBtn.addEventListener('click',exportCSV);
   var clearBtn=document.getElementById('btn-clear');   if(clearBtn)  clearBtn.addEventListener('click',clearAllData);
+  // initialise the multi-item sale form
+  initSaleRows();
 });
 </script>
 </body>
