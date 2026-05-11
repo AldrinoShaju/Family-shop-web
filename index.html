@@ -609,7 +609,7 @@ function showConfigBanner() {
   const banner = document.createElement('div');
   banner.id = 'config-banner';
   banner.style.cssText = 'position:fixed;top:60px;left:0;right:0;z-index:800;background:#fef3c7;border-bottom:2px solid #fde68a;padding:14px 28px;display:flex;align-items:center;gap:12px;font-size:13px;font-weight:500;color:#92400e;';
-  banner.innerHTML = '<i class="bi bi-exclamation-triangle-fill" style="font-size:18px;flex-shrink:0"></i><div><strong>Setup required:</strong> Open this HTML file and replace <code style="background:#fde68a;padding:2px 6px;border-radius:4px">YOUR_APPS_SCRIPT_URL_HERE</code> with your deployed Google Apps Script Web App URL. &nbsp;<a href="#" onclick="document.getElementById('config-banner').remove()" style="color:#92400e"><i class="bi bi-x-lg"></i> Dismiss</a></div>';
+  banner.innerHTML = '<i class="bi bi-exclamation-triangle-fill" style="font-size:18px;flex-shrink:0"></i><div><strong>Setup required:</strong> Open this HTML file and replace <code style="background:#fde68a;padding:2px 6px;border-radius:4px">YOUR_APPS_SCRIPT_URL_HERE</code> with your deployed Google Apps Script Web App URL. &nbsp;<a href="#" onclick="document.getElementById(&quot;config-banner&quot;).remove()" style="color:#92400e"><i class="bi bi-x-lg"></i> Dismiss</a></div>';
   document.body.appendChild(banner);
   document.querySelector('.main').style.marginTop = '110px';
   renderAll();
