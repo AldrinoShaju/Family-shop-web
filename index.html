@@ -297,7 +297,12 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
         <button class="btn-gs btn-primary-gs" onclick="recordSale()"><i class="bi bi-check2-circle"></i> Record Transaction</button>
       </div>
     </div>
-    <div class="c-card"><div class="c-card-title"><i class="bi bi-journal-text"></i> Sales History</div><div id="sales-table"></div></div>
+    <div class="c-card">
+      <div class="c-card-title"><i class="bi bi-journal-text"></i> Sales History
+        <input type="text" id="txn-search" class="form-control" placeholder="Search by ID, date, or item..." style="margin-left:auto;max-width:220px;font-size:12px;padding:6px 10px" oninput="renderSalesTable()">
+      </div>
+      <div id="sales-table"></div>
+    </div>
   </div>
 
   <!-- SUPPLIERS -->
@@ -480,7 +485,7 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 //  CLOUD PERSISTENCE — Google Apps Script
 // ═══════════════════════════════════════════════════════════════════
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9IqTFoN9EEXVjTbEJF7ebkbMyeC3lz0sdkc8Oj5fcRgDnxZYR9ezMrWsglvfIDUzL/exec';
-let state = { inventory: [], sales: [], purchases: [], suppliers: [], supplierRequests: [] };
+let state = { inventory: [], sales: [], purchases: [], suppliers: [], supplierRequests: [], transactions: [] };
 let _saveTimer = null;
 
 // loadState: fetch from Apps Script; migrate old data shapes for backward compat
@@ -532,7 +537,48 @@ function migrateState() {
   if (!Array.isArray(state.sales))             state.sales             = [];
   if (!Array.isArray(state.purchases))         state.purchases         = [];
   if (!Array.isArray(state.suppliers))         state.suppliers         = [];
-  if (!Array.isArray(state.supplierRequests))  state.supplierRequests  = []; // migration for old data
+  if (!Array.isArray(state.supplierRequests))  state.supplierRequests  = [];
+  if (!Array.isArray(state.transactions))      state.transactions      = [];
+
+  // ── MIGRATION: convert old flat state.sales into grouped state.transactions ──
+  // Old format: state.sales = [{id, txnId, itemName, qty, ...}, ...]
+  // New format: state.transactions = [{txnId, date, items:[...], totals:{...}}, ...]
+  //             state.sales remains as a FLAT computed view rebuilt from transactions
+  if (state.sales.length > 0 && state.transactions.length === 0) {
+    // Group old sales by txnId (or by date+sequential if no txnId)
+    const txnMap = {};
+    state.sales.forEach(s => {
+      const key = s.txnId || ('LEGACY-' + s.date + '-' + (s.id||Math.random()));
+      if (!txnMap[key]) txnMap[key] = { txnId: key, date: s.date, items: [], createdAt: s.date };
+      txnMap[key].items.push({
+        itemId:           s.itemId || null,
+        itemName:         s.itemName,
+        qty:              s.qty,
+        unit:             s.unit,
+        sell:             s.sell,
+        cost:             s.cost,
+        revenue:          s.revenue,
+        profit:           s.profit,
+        defaultSellPrice: s.defaultSellPrice || s.sell,
+        overrideSellPrice:s.overrideSellPrice || null,
+        finalSellPrice:   s.finalSellPrice   || s.sell,
+        priceOverridden:  s.priceOverridden  || false
+      });
+    });
+    state.transactions = Object.values(txnMap).map(txn => {
+      txn.totalRevenue = parseFloat(txn.items.reduce((s,i)=>s+i.revenue,0).toFixed(2));
+      txn.totalProfit  = parseFloat(txn.items.reduce((s,i)=>s+i.profit,0).toFixed(2));
+      txn.totalCost    = parseFloat(txn.items.reduce((s,i)=>s+i.cost*i.qty,0).toFixed(2));
+      txn.itemCount    = txn.items.length;
+      txn.hasOverride  = txn.items.some(i=>i.priceOverridden);
+      return txn;
+    }).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+    // Rebuild flat state.sales from transactions for backward compat with all analytics
+    state.sales = _flatSalesFromTransactions(state.transactions);
+  } else if (state.transactions.length > 0) {
+    // Already migrated — rebuild flat sales view from transactions
+    state.sales = _flatSalesFromTransactions(state.transactions);
+  }
 
   // Fix float IDs that may exist from old confirmRequest/addPurchase bug.
   // Inventory items with float IDs could not be found by onSaleRowItemChange's parseInt.
@@ -569,25 +615,30 @@ function migrateState() {
     if (s.profit === undefined)  s.profit  = parseFloat((s.revenue - s.qty * s.cost).toFixed(2));
   });
 
-  // Feature 2: Ensure inventory items have expiry, mrp, and createdAt fields
+  // Feature 2: Ensure inventory items have expiry, mrp, createdAt, supplierId, and refillHistory
   state.inventory.forEach(i => {
-    if (i.expiry    === undefined) i.expiry    = '';
-    if (i.mrp       === undefined) i.mrp       = 0;
-    if (!i.createdAt)              i.createdAt = new Date().toISOString().slice(0,10); // fallback: today for old items
+    if (i.expiry       === undefined) i.expiry       = '';
+    if (i.mrp          === undefined) i.mrp          = 0;
+    if (!i.createdAt)                 i.createdAt    = new Date().toISOString().slice(0,10);
+    if (i.supplierId   === undefined) i.supplierId   = null;  // linked supplier ID
+    if (!Array.isArray(i.refillHistory)) i.refillHistory = []; // audit trail
   });
 }
 
 function save() {
-  // Always write to localStorage immediately — works both online and file://
-  try { localStorage.setItem('gsm_cloud_cache', JSON.stringify(state)); } catch(e){}
+  // state.sales is a DERIVED view — exclude it from storage to avoid bloat.
+  // It is always rebuilt from state.transactions on load via migrateState().
+  const toSave = Object.assign({}, state, { sales: [] });
+  try { localStorage.setItem('gsm_cloud_cache', JSON.stringify(toSave)); } catch(e){}
   clearTimeout(_saveTimer); setCloudStatus('pending');
-  _saveTimer = setTimeout(pushSave, 800);
+  _saveTimer = setTimeout(function(){ pushSave(toSave); }, 800);
 }
 
-async function pushSave() {
+async function pushSave(toSave) {
   if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') return;
+  const body = toSave ? JSON.stringify(toSave) : JSON.stringify(Object.assign({}, state, { sales: [] }));
   try {
-    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(state) });
+    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body });
     setCloudStatus('ok');
   } catch(e) {
     // no-cors fetch failures are usually CORS/network issues (e.g. file://)
@@ -628,6 +679,45 @@ function showConfigBanner() {
 // ═══════════════════════════════════════════════════════════════════
 const fmt  = n => '₹' + parseFloat(n||0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
 const fmtN = n => parseFloat(n||0).toFixed(2);
+
+// ── Rebuild flat sales array from transactions (used by all analytics) ──
+// state.sales is ALWAYS derived from state.transactions — never written directly.
+function _flatSalesFromTransactions(transactions) {
+  const flat = [];
+  (transactions||[]).forEach(txn => {
+    (txn.items||[]).forEach(item => {
+      flat.push({
+        id:               txn.txnId + '-' + item.itemName, // stable synthetic ID for analytics
+        txnId:            txn.txnId,
+        itemId:           item.itemId,
+        itemName:         item.itemName,
+        qty:              item.qty,
+        unit:             item.unit,
+        sell:             item.finalSellPrice || item.sell,
+        cost:             item.cost,
+        revenue:          item.revenue,
+        profit:           item.profit,
+        date:             txn.date,
+        defaultSellPrice: item.defaultSellPrice,
+        overrideSellPrice:item.overrideSellPrice,
+        finalSellPrice:   item.finalSellPrice,
+        priceOverridden:  item.priceOverridden
+      });
+    });
+  });
+  return flat;
+}
+
+// ── Transaction ID generator ──
+// Format: TXN-YYYYMMDD-NNNN (sortable, human readable)
+function _generateTxnId() {
+  const d = new Date();
+  const dateStr = d.getFullYear().toString()
+    + String(d.getMonth()+1).padStart(2,'0')
+    + String(d.getDate()).padStart(2,'0');
+  const seq = String((state.transactions.length + 1)).padStart(4,'0');
+  return `TXN-${dateStr}-${seq}`;
+}
 
 // Feature 3 helper: returns days until expiry (+ve = future, -ve = past)
 function daysUntilExpiry(expiryStr) {
@@ -677,15 +767,13 @@ function addInventory() {
   const sell   = parseFloat(document.getElementById('inv-sell').value)||0;
   const mrp    = parseFloat(document.getElementById('inv-mrp').value)||0;
   const alert  = parseFloat(document.getElementById('inv-alert').value)||5;
-  const expiry = document.getElementById('inv-expiry').value || ''; // optional
+  const expiry = document.getElementById('inv-expiry').value || '';
   if (!name) { document.getElementById('inv-name').focus(); toast('Please enter an item name','error'); return; }
   const existing = state.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase());
   if (existing) {
-    existing.qty += qty;
-    if (cost)   existing.cost   = cost;
-    if (sell)   existing.sell   = sell;
-    if (mrp)    existing.mrp    = mrp;
-    if (expiry) existing.expiry = expiry; // update expiry on restock if provided
+    // Restocking an existing item — use the refill helper for consistency
+    _applyRefill(existing, { qty, cost: cost||existing.cost, sell: sell||existing.sell, mrp: mrp||existing.mrp, supplierId: existing.supplierId, notes: 'Added via inventory form' });
+    if (expiry) existing.expiry = expiry;
     existing.alert = alert;
     toast(`"${name}" restocked (+${qty} ${existing.unit})`);
   } else {
@@ -693,7 +781,9 @@ function addInventory() {
       id: Date.now(), name, cat: document.getElementById('inv-cat').value,
       qty, unit: document.getElementById('inv-unit').value,
       cost, sell, mrp, alert, expiry,
-      createdAt: new Date().toISOString().slice(0,10) // date added — used for dead stock calculation
+      supplierId: null,
+      refillHistory: [],
+      createdAt: new Date().toISOString().slice(0,10)
     });
     toast(`"${name}" added to inventory`);
   }
@@ -702,11 +792,175 @@ function addInventory() {
   renderAll();
 }
 
-function updateStock(id, delta) {
-  const item = state.inventory.find(i=>i.id===id); if(!item) return;
-  const nq = item.qty + delta;
-  if (nq < 0) { toast('Not enough stock!','error'); return; }
-  item.qty = nq; save(); renderAll();
+// ═══════════════════════════════════════════════════════════════════
+//  CENTRALISED REFILL HELPER
+//  All stock increases go through here — addInventory, addPurchase,
+//  confirmRequest, and the new Refill modal all call this.
+//  Historical sales are NEVER touched here.
+// ═══════════════════════════════════════════════════════════════════
+function _applyRefill(item, { qty, cost, sell, mrp, supplierId, notes, invoice, date }) {
+  if (!item) return;
+  const today = date || new Date().toISOString().slice(0,10);
+  // Snapshot old values BEFORE changing anything
+  const oldCost = item.cost, oldSell = item.sell, oldMrp = item.mrp;
+  // Update stock quantity
+  item.qty = parseFloat((item.qty + (qty||0)).toFixed(4));
+  // Update pricing — ONLY affects future sales (historical sales already snapshotted)
+  if (cost  > 0) item.cost = cost;
+  if (sell  > 0) item.sell = sell;
+  if (mrp   > 0) item.mrp  = mrp;
+  // Update supplier association
+  if (supplierId !== undefined) item.supplierId = supplierId;
+  // Append to refill history for audit trail
+  if (!Array.isArray(item.refillHistory)) item.refillHistory = [];
+  item.refillHistory.push({
+    date:       today,
+    qtyAdded:   qty || 0,
+    oldCost,    newCost: item.cost,
+    oldSell,    newSell: item.sell,
+    oldMrp,     newMrp:  item.mrp,
+    supplierId: item.supplierId,
+    notes:      notes || '',
+    invoice:    invoice || ''
+  });
+}
+
+// ── REFILL STOCK MODAL ──
+function openRefillModal(itemId) {
+  const item = state.inventory.find(i=>i.id===itemId); if(!item) return;
+  var old = document.getElementById('refill-modal-overlay'); if(old) old.remove();
+  const sup = state.suppliers.find(s=>s.id===item.supplierId);
+  const supOpts = '<option value="">No supplier / unknown</option>'
+    + state.suppliers.map(s=>`<option value="${s.id}"${s.id===item.supplierId?' selected':''}>${s.name}${s.phone?' ('+s.phone+')':''}</option>`).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'refill-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9998;display:flex;align-items:flex-end;justify-content:center;overflow-y:auto';
+  overlay.innerHTML = `
+    <div style="background:#fff;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:24px 20px 32px;box-shadow:0 -4px 40px rgba(0,0,0,.2)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <h3 style="font-size:17px;font-weight:700"><i class="bi bi-arrow-repeat" style="color:var(--green)"></i> Refill Stock</h3>
+        <button onclick="document.getElementById('refill-modal-overlay').remove()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#64748b">×</button>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:18px">
+        <strong>${item.name}</strong> · Current stock: <strong>${item.qty} ${item.unit}</strong>
+        ${sup?`· Supplier: <strong>${sup.name}</strong>`:''}
+      </p>
+
+      <!-- Quantity & Supplier -->
+      <div style="background:var(--green-lt);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">📦 Stock Quantity</div>
+        <div class="row g-2">
+          <div class="col-6">
+            <label class="form-label">Qty to add ★</label>
+            <input type="number" class="form-control" id="rf-qty" placeholder="0" min="0" step="0.1" inputmode="decimal">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Unit</label>
+            <input type="text" class="form-control" id="rf-unit-display" value="${item.unit}" readonly style="background:#f1f5f9;color:var(--muted)">
+          </div>
+        </div>
+      </div>
+
+      <!-- Supplier -->
+      <div style="background:#f0f9ff;border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">🚚 Supplier</div>
+        <label class="form-label">Supplier for this refill</label>
+        <select class="form-select" id="rf-supplier">${supOpts}</select>
+      </div>
+
+      <!-- Pricing — show old values alongside new -->
+      <div style="background:#fffbeb;border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">💰 Update Pricing <span style="font-size:10px;font-weight:400;text-transform:none;color:var(--muted)">(leave blank to keep current)</span></div>
+        <div class="row g-2">
+          <div class="col-4">
+            <label class="form-label">Cost ₹ <span style="color:var(--muted);font-size:10px">now: ${fmt(item.cost)}</span></label>
+            <input type="number" class="form-control" id="rf-cost" placeholder="${fmtN(item.cost)}" step="0.01" inputmode="decimal">
+          </div>
+          <div class="col-4">
+            <label class="form-label">Sell ₹ <span style="color:var(--muted);font-size:10px">now: ${fmt(item.sell)}</span></label>
+            <input type="number" class="form-control" id="rf-sell" placeholder="${fmtN(item.sell)}" step="0.01" inputmode="decimal">
+          </div>
+          <div class="col-4">
+            <label class="form-label">MRP ₹ <span style="color:var(--muted);font-size:10px">now: ${fmt(item.mrp)}</span></label>
+            <input type="number" class="form-control" id="rf-mrp" placeholder="${fmtN(item.mrp)}" step="0.01" inputmode="decimal">
+          </div>
+        </div>
+      </div>
+
+      <!-- Optional details -->
+      <div style="background:var(--surface);border-radius:10px;padding:14px;margin-bottom:18px">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">📋 Optional Details</div>
+        <div class="row g-2">
+          <div class="col-6 col-sm-4">
+            <label class="form-label">Invoice / Ref #</label>
+            <input type="text" class="form-control" id="rf-invoice" placeholder="INV-001">
+          </div>
+          <div class="col-6 col-sm-4">
+            <label class="form-label">Refill date</label>
+            <input type="date" class="form-control" id="rf-date" value="${new Date().toISOString().slice(0,10)}">
+          </div>
+          <div class="col-12 col-sm-4">
+            <label class="form-label">Notes</label>
+            <input type="text" class="form-control" id="rf-notes" placeholder="e.g. Monthly restock">
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;font-size:12px;color:var(--muted);margin-bottom:16px">
+        <i class="bi bi-shield-check" style="color:var(--green)"></i>
+        <strong style="color:var(--green)">Historical accuracy guaranteed:</strong> Updated prices only affect <em>future</em> sales. All past transactions keep their original prices.
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn-gs btn-outline-gs" onclick="document.getElementById('refill-modal-overlay').remove()">Cancel</button>
+        <button class="btn-gs btn-primary-gs" style="flex:1;justify-content:center" onclick="saveRefill(${itemId})"><i class="bi bi-arrow-repeat"></i> Confirm Refill</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+  setTimeout(()=>{ const el=document.getElementById('rf-qty'); if(el) el.focus(); }, 100);
+}
+
+function saveRefill(itemId) {
+  const item = state.inventory.find(i=>i.id===itemId); if(!item) return;
+  const qty     = parseFloat(document.getElementById('rf-qty').value) || 0;
+  const cost    = parseFloat(document.getElementById('rf-cost').value) || 0;
+  const sell    = parseFloat(document.getElementById('rf-sell').value) || 0;
+  const mrp     = parseFloat(document.getElementById('rf-mrp').value)  || 0;
+  const supId   = document.getElementById('rf-supplier').value ? parseInt(document.getElementById('rf-supplier').value) : null;
+  const invoice = document.getElementById('rf-invoice').value.trim();
+  const date    = document.getElementById('rf-date').value;
+  const notes   = document.getElementById('rf-notes').value.trim();
+
+  if (qty <= 0) { toast('Enter a quantity greater than 0','error'); return; }
+
+  const supName = supId ? (state.suppliers.find(s=>s.id===supId)||{}).name||'' : '';
+
+  // Apply refill through central helper — this handles all stock + pricing + history
+  _applyRefill(item, { qty, cost, sell, mrp, supplierId: supId, notes, invoice, date });
+
+  // Also record in purchases history for P&L accuracy
+  if (supName || supId) {
+    state.purchases.push({
+      id:         Math.floor(Date.now()),
+      supplierId: supId,
+      supplier:   supName,
+      item:       item.name,
+      qty:        qty,
+      unit:       item.unit,
+      cost:       cost > 0 ? parseFloat((cost * qty).toFixed(2)) : 0,
+      invoice:    invoice,
+      date:       date || new Date().toISOString().slice(0,10),
+      fromRefill: true
+    });
+  }
+
+  save();
+  document.getElementById('refill-modal-overlay').remove();
+  const sup = state.suppliers.find(s=>s.id===supId);
+  toast(`"${item.name}" refilled: +${qty} ${item.unit}${sup?' from '+sup.name:''}`);
+  renderAll();
 }
 
 function deleteItem(id) {
@@ -911,9 +1165,9 @@ function updateTotalBar() {
   if (overrideBadge) overrideBadge.style.display = hasOverride ? 'inline-flex' : 'none';
 }
 
-// recordSale: snapshots defaultSellPrice (inventory), overrideSellPrice (if set),
-// and finalSellPrice (whichever was actually used). Revenue/profit use finalSellPrice.
-// Inventory item.sell is NEVER modified.
+// recordSale: creates ONE grouped transaction in state.transactions.
+// state.sales (flat view) is rebuilt from transactions after every change.
+// Inventory prices are snapshotted per line item — never recalculated later.
 function recordSale() {
   const date = document.getElementById('sale-date').value;
   if (!date) { toast('Select a date','error'); return; }
@@ -927,76 +1181,84 @@ function recordSale() {
     const dec = DECIMAL_UNITS.includes(item.unit);
     if (!dec && String(row.qty).includes('.')) { errors.push(`${item.name}: must be whole number`); return; }
     if (item.qty < row.qty) { errors.push(`${item.name}: only ${item.qty} ${item.unit} in stock`); return; }
-    // Validate override price if provided
-    if (row.overridePrice !== null && row.overridePrice !== '') {
-      if (isNaN(row.overridePrice) || row.overridePrice < 0) {
-        errors.push(`${item.name}: invalid override price`); return;
-      }
-      if (row.overridePrice === 0) {
-        // Allow ₹0 sales (free samples, damaged goods) but warn implicitly via profit colour
-      }
+    if (row.overridePrice !== null && row.overridePrice !== '' && (isNaN(row.overridePrice) || row.overridePrice < 0)) {
+      errors.push(`${item.name}: invalid override price`); return;
     }
   });
   if (errors.length > 0) { toast(errors[0], 'error'); return; }
 
-  const txnId = 'TXN-' + Date.now();
-  let totalRevenue = 0;
+  const txnId = _generateTxnId();
+  const lineItems = [];
+  let totalRevenue = 0, totalProfit = 0, totalCost = 0;
+
   validRows.forEach(row => {
     const item = state.inventory.find(i=>i.id===row.itemId);
     const qty  = row.qty;
-
-    // Three-price snapshot system:
-    const defaultSellPrice   = item.sell;   // inventory price AT TIME OF SALE (snapshot)
-    const costAtSale         = item.cost;   // cost AT TIME OF SALE (snapshot)
-    const hasOverride        = row.overridePrice !== null && row.overridePrice !== '' && parseFloat(row.overridePrice) !== item.sell;
-    const overrideSellPrice  = hasOverride ? parseFloat(row.overridePrice) : null;
-    const finalSellPrice     = hasOverride ? overrideSellPrice : defaultSellPrice;
-
-    // Deduct stock AFTER snapshotting
+    // Snapshot prices at time of sale
+    const defaultSellPrice  = item.sell;
+    const costAtSale        = item.cost;
+    const hasOverride       = row.overridePrice !== null && row.overridePrice !== '' && parseFloat(row.overridePrice) !== item.sell;
+    const overrideSellPrice = hasOverride ? parseFloat(row.overridePrice) : null;
+    const finalSellPrice    = hasOverride ? overrideSellPrice : defaultSellPrice;
+    // Deduct inventory stock
     item.qty = parseFloat((item.qty - qty).toFixed(4));
-
     const revenue = parseFloat((qty * finalSellPrice).toFixed(2));
     const cost    = parseFloat((qty * costAtSale).toFixed(2));
     totalRevenue += revenue;
-
-    state.sales.push({
-      id:               Date.now() + Math.random(),
-      txnId,
+    totalProfit  += parseFloat((revenue - cost).toFixed(2));
+    totalCost    += cost;
+    lineItems.push({
       itemId:           item.id,
       itemName:         item.name,
-      qty,
-      unit:             item.unit,
-      // Legacy field kept for backward compat — equals finalSellPrice
-      sell:             finalSellPrice,
+      qty, unit:        item.unit,
+      sell:             finalSellPrice,        // legacy compat field
       cost:             costAtSale,
-      revenue,
-      profit:           parseFloat((revenue - cost).toFixed(2)),
-      date,
-      // Extended price audit fields (new)
-      defaultSellPrice,                     // original inventory price
-      overrideSellPrice,                    // null if no override was used
-      finalSellPrice,                       // price actually used
-      priceOverridden:  hasOverride         // boolean flag for easy filtering
+      revenue, profit:  parseFloat((revenue - cost).toFixed(2)),
+      defaultSellPrice, overrideSellPrice, finalSellPrice,
+      priceOverridden:  hasOverride
     });
   });
 
+  // Store ONE grouped transaction
+  state.transactions.push({
+    txnId,
+    date,
+    createdAt:    new Date().toISOString(),
+    items:        lineItems,
+    totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+    totalProfit:  parseFloat(totalProfit.toFixed(2)),
+    totalCost:    parseFloat(totalCost.toFixed(2)),
+    itemCount:    lineItems.length,
+    hasOverride:  lineItems.some(i=>i.priceOverridden)
+  });
+
+  // Rebuild flat sales view for analytics
+  state.sales = _flatSalesFromTransactions(state.transactions);
+
   save();
-  const overrideCount = validRows.filter(r => r.overridePrice !== null && r.overridePrice !== '').length;
-  let msg = `Transaction recorded — ${fmt(totalRevenue)} total`;
+  const overrideCount = lineItems.filter(i=>i.priceOverridden).length;
+  let msg = `${txnId} recorded — ${fmt(totalRevenue)}`;
   if (overrideCount > 0) msg += ` (${overrideCount} custom price${overrideCount>1?'s':''})`;
   toast(msg);
   initSaleRows();
   renderAll();
 }
 
-function deleteSale(id) {
-  const sale = state.sales.find(s=>s.id===id);
-  if (!sale || !confirm('Delete this sale? Stock will be restored.')) return;
-  const item = state.inventory.find(i=>i.id===sale.itemId);
-  if (item) item.qty += sale.qty;
-  state.sales = state.sales.filter(s=>s.id!==id);
-  save(); toast('Sale deleted'); renderAll();
+// Delete an entire transaction by txnId and restore all its stock
+function deleteTransaction(txnId) {
+  const txn = state.transactions.find(t=>t.txnId===txnId);
+  if (!txn || !confirm(`Delete transaction ${txnId}? Stock for all ${txn.items.length} item(s) will be restored.`)) return;
+  txn.items.forEach(li => {
+    const inv = state.inventory.find(i=>i.id===li.itemId);
+    if (inv) inv.qty = parseFloat((inv.qty + li.qty).toFixed(4));
+  });
+  state.transactions = state.transactions.filter(t=>t.txnId!==txnId);
+  state.sales = _flatSalesFromTransactions(state.transactions);
+  save(); toast(`Transaction ${txnId} deleted`); renderAll();
 }
+
+// Legacy deleteSale — kept for backward compat, now deletes whole transaction
+function deleteSale(txnId) { deleteTransaction(txnId); }
 
 function populateSaleDropdown() {} // no-op: handled inline in renderSaleRows
 function onSaleItemChange() {}     // no-op: handled by onSaleRowItemChange
@@ -1107,8 +1369,13 @@ function addPurchase() {
   if (qty <= 0)    { toast('Enter a valid quantity','error'); return; }
   const unitCost = cost > 0 ? parseFloat((cost/qty).toFixed(4)) : 0;
   const existing = state.inventory.find(i=>i.name.toLowerCase()===item.toLowerCase());
-  if (existing) { existing.qty+=qty; if(unitCost>0) existing.cost=unitCost; toast(`"${item}" restocked (+${qty} ${unit})`); }
-  else { state.inventory.push({id:Math.floor(Date.now())+1,name:item,cat:'Other',qty,unit,cost:unitCost,sell:0,mrp:0,alert:5,expiry:'',createdAt:new Date().toISOString().slice(0,10)}); toast(`"${item}" added to inventory — set selling price`); }
+  if (existing) {
+    _applyRefill(existing, { qty, cost: unitCost||existing.cost, sell: existing.sell, mrp: existing.mrp, supplierId: supId, notes: `Purchase from ${supName}`, invoice: inv, date });
+    toast(`"${item}" restocked (+${qty} ${unit})`);
+  } else {
+    state.inventory.push({id:Math.floor(Date.now())+1,name:item,cat:'Other',qty,unit,cost:unitCost,sell:0,mrp:0,alert:5,expiry:'',supplierId:supId,refillHistory:[],createdAt:new Date().toISOString().slice(0,10)});
+    toast(`"${item}" added to inventory — set selling price`);
+  }
   state.purchases.push({id:Date.now(),supplierId:supId,supplier:supName,item,qty,unit,cost,invoice:inv,date});
   save();
   ['sup-item','sup-qty','sup-cost','sup-inv'].forEach(id=>document.getElementById(id).value='');
@@ -1294,19 +1561,20 @@ function renderDashboard() {
       }).join('') + (pending.length>3?`<p style="font-size:12px;color:var(--muted);margin-top:8px">+${pending.length-3} more pending requests</p>`:'');
     }
   }
-  document.getElementById('dash-recent').innerHTML = recent.length===0
+  const recentTxns = (state.transactions||[]).slice().reverse().slice(0,6);
+  document.getElementById('dash-recent').innerHTML = recentTxns.length===0
     ? '<div class="empty-state"><i class="bi bi-cart"></i>No sales recorded yet</div>'
-    : `<div class="gs-table-wrap desktop-table"><table class="gs-table"><thead><tr><th>Item</th><th>Qty</th><th>Revenue</th><th>Profit</th><th>Date</th></tr></thead><tbody>`
-      + recent.map(s=>`<tr style="${s.priceOverridden?'background:#fffbeb':''}">
-          <td style="font-weight:600">${s.itemName}</td>
-          <td>${s.qty} ${s.unit}</td>
-          <td style="color:var(--green);font-family:'DM Mono',monospace">${fmt(s.revenue)}</td>
-          <td style="color:${s.profit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${fmt(s.profit)}</td>
-          <td style="color:var(--muted)">${s.date}${s.priceOverridden?'<span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px;margin-left:6px">Custom</span>':''}</td>
+    : `<div class="gs-table-wrap desktop-table"><table class="gs-table"><thead><tr><th>Txn ID</th><th>Items</th><th>Revenue</th><th>Profit</th><th>Date</th></tr></thead><tbody>`
+      + recentTxns.map(t=>`<tr>
+          <td style="font-weight:600;font-family:'DM Mono',monospace;color:var(--blue);font-size:12px">${t.txnId}</td>
+          <td style="color:var(--muted)">${t.itemCount} item${t.itemCount!==1?'s':''}</td>
+          <td style="color:var(--green);font-family:'DM Mono',monospace">${fmt(t.totalRevenue)}</td>
+          <td style="color:${t.totalProfit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${fmt(t.totalProfit)}</td>
+          <td style="color:var(--muted)">${t.date}${t.hasOverride?'<span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px;margin-left:6px">Custom</span>':''}</td>
         </tr>`).join('')+'</tbody></table></div>'
-      + '<div class="mobile-list">'+recent.map(s=>`<div class="mc" style="${s.priceOverridden?'background:#fffbeb':''}">
-          <div class="mc-top"><span class="mc-name">${s.itemName}</span><span style="color:var(--green);font-family:monospace;font-weight:600">${fmt(s.revenue)}</span></div>
-          <div class="mc-meta"><span>${s.qty} ${s.unit}</span><span style="color:${s.profit>=0?'var(--green)':'var(--red)'}">Profit: ${fmt(s.profit)}</span><span>${s.date}</span>${s.priceOverridden?'<span style="color:var(--amber);font-size:10px">Custom price</span>':''}</div>
+      + '<div class="mobile-list">'+recentTxns.map(t=>`<div class="mc">
+          <div class="mc-top"><span class="mc-name" style="font-family:monospace;color:var(--blue)">${t.txnId}</span><span style="color:var(--green);font-family:monospace;font-weight:600">${fmt(t.totalRevenue)}</span></div>
+          <div class="mc-meta"><span>${t.itemCount} item${t.itemCount!==1?'s':''}</span><span style="color:${t.totalProfit>=0?'var(--green)':'var(--red)'}">Profit: ${fmt(t.totalProfit)}</span><span>${t.date}</span></div>
         </div>`).join('')+'</div>';
 }
 
@@ -1379,7 +1647,7 @@ function renderInventoryTable() {
   if (state.inventory.length===0) { el.innerHTML='<div class="empty-state"><i class="bi bi-boxes"></i>No items added yet. Add your first item above.</div>'; return; }
   const needsPrice = state.inventory.filter(i=>i.sell<=0);
   const banner = needsPrice.length > 0
-    ? `<div class="alert-low-gs" style="margin-bottom:12px;background:#fef3c7;border-color:#fde68a;color:#92400e"><i class="bi bi-pencil-square"></i><span><strong>${needsPrice.length} item(s) need a selling price</strong> — click Edit</span></div>` : '';
+    ? `<div class="alert-low-gs" style="margin-bottom:12px;background:#fef3c7;border-color:#fde68a;color:#92400e"><i class="bi bi-pencil-square"></i><span><strong>${needsPrice.length} item(s) need a selling price</strong> — click Edit or Refill to set it</span></div>` : '';
   const rows = state.inventory.map(i => {
     const margin  = i.sell>0 ? ((i.sell-i.cost)/i.sell*100).toFixed(0) : 0;
     const low     = i.qty <= i.alert;
@@ -1392,15 +1660,18 @@ function renderInventoryTable() {
           ? `<span style="color:var(--amber);font-size:11px;font-weight:600">${fmtExpiry(i.expiry)} (${expDays}d)</span>`
           : `<span style="font-size:11px">${fmtExpiry(i.expiry)}</span>`)
       : '<span style="color:var(--muted);font-size:11px">—</span>';
-    return {i,margin,low,noSell,expLabel,expDays};
+    const sup = state.suppliers.find(s=>s.id===i.supplierId);
+    const supLabel = sup ? sup.name : '<span style="color:var(--muted)">—</span>';
+    return {i,margin,low,noSell,expLabel,expDays,supLabel};
   });
 
   const desktopHTML = `<div class="gs-table-wrap desktop-table"><table class="gs-table">
-    <thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Cost ₹</th><th>Sell ₹</th><th>MRP ₹</th><th>Margin</th><th>Alert</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead><tbody>`
-    + rows.map(({i,margin,low,noSell,expLabel,expDays})=>`<tr style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
+    <thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Supplier</th><th>Cost ₹</th><th>Sell ₹</th><th>MRP ₹</th><th>Margin</th><th>Alert</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead><tbody>`
+    + rows.map(({i,margin,low,noSell,expLabel,expDays,supLabel})=>`<tr style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
         <td style="font-weight:600">${i.name}${noSell?'<span style="margin-left:6px;font-size:11px;color:#d97706">⚠</span>':''}</td>
         <td><span class="badge-gs badge-info">${i.cat}</span></td>
         <td style="font-family:'DM Mono',monospace">${i.qty} ${i.unit}</td>
+        <td style="font-size:12px">${supLabel}</td>
         <td style="font-family:'DM Mono',monospace;color:var(--muted)">${fmt(i.cost)}</td>
         <td style="font-family:'DM Mono',monospace;color:${noSell?'var(--amber)':'inherit'}">${noSell?'—':fmt(i.sell)}</td>
         <td style="font-family:'DM Mono',monospace;color:var(--muted)">${i.mrp?fmt(i.mrp):'—'}</td>
@@ -1409,20 +1680,20 @@ function renderInventoryTable() {
         <td>${expLabel}</td>
         <td><span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span></td>
         <td style="display:flex;gap:5px;flex-wrap:wrap">
-          <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},-1)">−1</button>
-          <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},1)">+1</button>
+          <button class="btn-gs btn-sm-gs" style="background:#dcfce7;color:#16a34a" onclick="openRefillModal(${i.id})"><i class="bi bi-arrow-repeat"></i> Refill</button>
           <button class="btn-gs btn-sm-gs" style="background:#e0f2fe;color:#0369a1" onclick="openEditModal(${i.id})"><i class="bi bi-pencil"></i> Edit</button>
           <button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteItem(${i.id})"><i class="bi bi-trash3"></i></button>
         </td></tr>`).join('')+'</tbody></table></div>';
 
-  const mobileHTML = '<div class="mobile-list">'+rows.map(({i,margin,low,noSell,expLabel,expDays})=>`
+  const mobileHTML = '<div class="mobile-list">'+rows.map(({i,margin,low,noSell,expLabel,expDays,supLabel})=>`
     <div class="mc" style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
       <div class="mc-top">
         <span class="mc-name">${i.name}${noSell?'<span style="font-size:10px;color:var(--amber);margin-left:5px">⚠</span>':''}</span>
         <span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span>
       </div>
       <div class="mc-meta">
-        <span>${i.qty} ${i.unit}</span>
+        <span><strong>${i.qty} ${i.unit}</strong></span>
+        <span><i class="bi bi-truck-front"></i> ${supLabel}</span>
         <span>Cost: ${fmt(i.cost)}</span>
         <span>Sell: ${noSell?'—':fmt(i.sell)}</span>
         ${i.mrp?`<span>MRP: ${fmt(i.mrp)}</span>`:''}
@@ -1431,8 +1702,7 @@ function renderInventoryTable() {
         <span><i class="bi bi-calendar-event"></i> ${expLabel}</span>
       </div>
       <div class="mc-actions">
-        <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},-1)">−1</button>
-        <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="updateStock(${i.id},1)">+1</button>
+        <button class="btn-gs btn-sm-gs" style="background:#dcfce7;color:#16a34a;flex:1;justify-content:center" onclick="openRefillModal(${i.id})"><i class="bi bi-arrow-repeat"></i> Refill</button>
         <button class="btn-gs btn-sm-gs" style="background:#e0f2fe;color:#0369a1" onclick="openEditModal(${i.id})"><i class="bi bi-pencil"></i> Edit</button>
         <button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteItem(${i.id})"><i class="bi bi-trash3"></i></button>
       </div>
@@ -1441,61 +1711,108 @@ function renderInventoryTable() {
   el.innerHTML = banner + desktopHTML + mobileHTML;
 }
 
-// ═══════════════════════════════════════════════════════════════════
-//  SALES TABLE
-//  Shows override pricing indicator when a custom price was used.
-//  All revenue/profit values come from snapshotted finalSellPrice.
-//  Backward compat: old records without priceOverridden field render normally.
-// ═══════════════════════════════════════════════════════════════════
+// ── Transaction expand state ──
+let expandedTxns = new Set();
+function toggleTxnExpand(txnId) {
+  if (expandedTxns.has(txnId)) expandedTxns.delete(txnId);
+  else expandedTxns.add(txnId);
+  renderSalesTable();
+}
+
+// ── SALES TABLE — grouped transaction view ──
 function renderSalesTable() {
   const el = document.getElementById('sales-table'); if(!el) return;
-  if (state.sales.length===0) { el.innerHTML='<div class="empty-state"><i class="bi bi-cart"></i>No sales recorded yet.</div>'; return; }
+  const txns = (state.transactions||[]).slice().reverse();
+  if (txns.length===0) { el.innerHTML='<div class="empty-state"><i class="bi bi-cart"></i>No transactions recorded yet.</div>'; return; }
 
-  // Helper: build sell-price cell with override display
-  function sellPriceCell(s) {
-    if (s.priceOverridden && s.defaultSellPrice != null && s.overrideSellPrice != null) {
-      return `<td style="font-family:'DM Mono',monospace">
-        <span style="text-decoration:line-through;color:var(--muted);font-size:11px">${fmt(s.defaultSellPrice)}</span>
-        <span style="color:var(--amber);font-weight:600;margin-left:4px">${fmt(s.finalSellPrice)}</span>
-        <span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px;margin-left:4px;padding:1px 6px">Custom</span>
-      </td>`;
-    }
-    return `<td style="font-family:'DM Mono',monospace;color:var(--muted)">${fmt(s.sell)}</td>`;
-  }
+  // Search filter
+  const searchEl = document.getElementById('txn-search');
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+  const filtered = q ? txns.filter(t =>
+    t.txnId.toLowerCase().includes(q) ||
+    t.date.includes(q) ||
+    t.items.some(i=>i.itemName.toLowerCase().includes(q))
+  ) : txns;
 
-  function sellPriceMeta(s) {
-    if (s.priceOverridden && s.defaultSellPrice != null && s.overrideSellPrice != null) {
-      return `<span><s style="font-size:10px">${fmt(s.defaultSellPrice)}</s> → <span style="color:var(--amber);font-weight:600">${fmt(s.finalSellPrice)}</span> <span style="font-size:10px;color:var(--amber)">(Custom)</span></span>`;
-    }
-    return `<span>${s.qty} ${s.unit} × ${fmt(s.sell)}</span>`;
-  }
+  if (filtered.length===0) { el.innerHTML='<div class="empty-state"><i class="bi bi-search"></i>No transactions match your search.</div>'; return; }
 
-  el.innerHTML=`<div class="gs-table-wrap desktop-table"><table class="gs-table">
-    <thead><tr><th>Item</th><th>Qty</th><th>Sell price</th><th>Revenue</th><th>Profit</th><th>Date</th><th></th></tr></thead><tbody>`
-    + state.sales.slice().reverse().map(s=>`<tr style="${s.priceOverridden?'background:#fffbeb':''}">
-        <td style="font-weight:600">${s.itemName}</td>
-        <td>${s.qty} ${s.unit}</td>
-        ${sellPriceCell(s)}
-        <td style="font-family:'DM Mono',monospace;color:var(--green)">${fmt(s.revenue)}</td>
-        <td style="font-family:'DM Mono',monospace;color:${s.profit>=0?'var(--green)':'var(--red)'}">${fmt(s.profit)}</td>
-        <td style="color:var(--muted)">${s.date}</td>
-        <td><button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteSale(${s.id})"><i class="bi bi-trash3"></i></button></td>
-      </tr>`).join('')+'</tbody></table></div>'
-    + '<div class="mobile-list">'+state.sales.slice().reverse().map(s=>`<div class="mc" style="${s.priceOverridden?'background:#fffbeb':''}">
-        <div class="mc-top">
-          <span class="mc-name">${s.itemName}</span>
-          <span style="display:flex;align-items:center;gap:6px">
-            ${s.priceOverridden?'<span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px">Custom</span>':''}
-            <span style="color:var(--green);font-family:monospace;font-weight:600">${fmt(s.revenue)}</span>
-          </span>
+  // Summary stats bar
+  const totalTxns = state.transactions.length;
+  const totalRev  = state.transactions.reduce((s,t)=>s+t.totalRevenue,0);
+  const avgBasket = totalTxns > 0 ? (totalRev/totalTxns) : 0;
+  const avgItems  = totalTxns > 0 ? (state.transactions.reduce((s,t)=>s+t.itemCount,0)/totalTxns).toFixed(1) : 0;
+
+  const statsBar = `<div style="display:flex;flex-wrap:wrap;gap:8px 20px;padding:10px 14px;background:var(--surface);border-radius:10px;border:1px solid var(--border);margin-bottom:12px;font-size:12px">
+    <span style="color:var(--muted)">Transactions: <strong style="color:var(--ink)">${totalTxns}</strong></span>
+    <span style="color:var(--muted)">Total revenue: <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalRev)}</strong></span>
+    <span style="color:var(--muted)">Avg. basket: <strong style="color:var(--ink);font-family:'DM Mono',monospace">${fmt(avgBasket)}</strong></span>
+    <span style="color:var(--muted)">Avg. items/txn: <strong style="color:var(--ink)">${avgItems}</strong></span>
+  </div>`;
+
+  const cards = filtered.map(txn => {
+    const isExpanded = expandedTxns.has(txn.txnId);
+    const hasOverride = txn.hasOverride;
+
+    // Line items table (shown when expanded)
+    const itemsHTML = `
+      <div style="border-top:1px solid var(--border);padding:12px 0 4px">
+        <div class="gs-table-wrap desktop-table">
+          <table class="gs-table">
+            <thead><tr><th>Item</th><th>Qty</th><th>Sell price</th><th>Revenue</th><th>Profit</th></tr></thead>
+            <tbody>${txn.items.map(li=>`<tr style="${li.priceOverridden?'background:#fffbeb':''}">
+              <td style="font-weight:600">${li.itemName}</td>
+              <td>${li.qty} ${li.unit}</td>
+              <td style="font-family:'DM Mono',monospace">
+                ${li.priceOverridden
+                  ? `<span style="text-decoration:line-through;color:var(--muted);font-size:11px">${fmt(li.defaultSellPrice)}</span>
+                     <span style="color:var(--amber);font-weight:600;margin-left:4px">${fmt(li.finalSellPrice)}</span>
+                     <span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px;margin-left:4px">Custom</span>`
+                  : `<span style="color:var(--muted)">${fmt(li.sell)}</span>`}
+              </td>
+              <td style="font-family:'DM Mono',monospace;color:var(--green)">${fmt(li.revenue)}</td>
+              <td style="font-family:'DM Mono',monospace;color:${li.profit>=0?'var(--green)':'var(--red)'}">${fmt(li.profit)}</td>
+            </tr>`).join('')}</tbody>
+          </table>
         </div>
-        <div class="mc-meta">
-          ${sellPriceMeta(s)}
-          <span style="color:${s.profit>=0?'var(--green)':'var(--red)'}">Profit: ${fmt(s.profit)}</span>
-          <span>${s.date}</span>
+        <div class="mobile-list">${txn.items.map(li=>`<div class="mc" style="${li.priceOverridden?'background:#fffbeb':''}">
+          <div class="mc-top">
+            <span class="mc-name">${li.itemName}</span>
+            <span style="color:var(--green);font-family:monospace;font-weight:600">${fmt(li.revenue)}</span>
+          </div>
+          <div class="mc-meta">
+            <span>${li.qty} ${li.unit}</span>
+            ${li.priceOverridden
+              ? `<span><s style="font-size:10px">${fmt(li.defaultSellPrice)}</s> → <span style="color:var(--amber)">${fmt(li.finalSellPrice)}</span></span>`
+              : `<span>× ${fmt(li.sell)}</span>`}
+            <span style="color:${li.profit>=0?'var(--green)':'var(--red)'}">Profit: ${fmt(li.profit)}</span>
+          </div>
+        </div>`).join('')}</div>
+      </div>`;
+
+    return `<div class="txn-card" style="background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden">
+      <!-- Header row — click to expand -->
+      <div style="display:flex;flex-direction:column;gap:6px;padding:12px 16px;cursor:pointer;user-select:none${hasOverride?';background:#fffdf0':''}" onclick="toggleTxnExpand('${txn.txnId}')">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--blue)">${txn.txnId}</span>
+          <span class="badge-gs badge-info" style="font-size:10px">${txn.itemCount} item${txn.itemCount!==1?'s':''}</span>
+          ${hasOverride?'<span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px"><i class="bi bi-tag-fill"></i> Custom price</span>':''}
+          <i class="bi bi-chevron-${isExpanded?'up':'down'}" style="color:var(--muted);font-size:14px;margin-left:auto;flex-shrink:0"></i>
         </div>
-        <div class="mc-actions"><button class="btn-gs btn-danger-gs btn-sm-gs" onclick="deleteSale(${s.id})"><i class="bi bi-trash3"></i> Delete</button></div>
-      </div>`).join('')+'</div>';
+        <div style="display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12px;color:var(--muted)">
+          <span><i class="bi bi-calendar3"></i> ${txn.date}</span>
+          <span style="color:var(--green);font-weight:600;font-family:'DM Mono',monospace">${fmt(txn.totalRevenue)}</span>
+          <span style="color:${txn.totalProfit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">Profit: ${fmt(txn.totalProfit)}</span>
+        </div>
+        <!-- Action buttons row -->
+        <div style="display:flex;gap:8px" onclick="event.stopPropagation()">
+          <button class="btn-gs btn-danger-gs btn-sm-gs" style="font-size:11px;padding:5px 10px" onclick="deleteTransaction('${txn.txnId}')"><i class="bi bi-trash3"></i> Delete</button>
+        </div>
+      </div>
+      ${isExpanded ? itemsHTML : ''}
+    </div>`;
+  }).join('');
+
+  el.innerHTML = statsBar + cards;
 }
 
 function renderSuppliersTable() {
@@ -1585,18 +1902,20 @@ function buildItemStats(sales) {
   return Object.values(map);
 }
 
-// ── Monthly aggregation ──
+// ── Monthly aggregation — counts transactions, not flat line items ──
 function buildMonthlyStats(sales) {
   const map = {};
   sales.forEach(s => {
     const mon = s.date ? s.date.slice(0,7) : 'unknown';
-    if (!map[mon]) map[mon] = {month:mon, rev:0, profit:0, cost:0, count:0};
+    if (!map[mon]) map[mon] = {month:mon, rev:0, profit:0, cost:0, txnIds:new Set()};
     map[mon].rev    += s.revenue;
     map[mon].profit += s.profit;
     map[mon].cost   += s.cost || 0;
-    map[mon].count  += 1;
+    if (s.txnId) map[mon].txnIds.add(s.txnId);
   });
-  return Object.values(map).sort((a,b)=>a.month.localeCompare(b.month));
+  return Object.values(map).sort((a,b)=>a.month.localeCompare(b.month)).map(m=>({
+    ...m, count: m.txnIds.size || 1
+  }));
 }
 
 // ── Supplier stats ──
@@ -1826,11 +2145,13 @@ function renderKPIRow(sales) {
   const lastMonPro  = state.sales.filter(s=>s.date&&s.date.startsWith(lastMonStr)).reduce((t,s)=>t+s.profit,0);
   const proGrowth   = growthPct(thisMonPro, lastMonPro);
 
+  const txnCount  = state.transactions.length;
+  const avgBasket = txnCount > 0 ? (totalRev/txnCount) : 0;
   const kpis = [
     { label:'Total Revenue', val:fmt(totalRev), sub:'Selected period', color:'#16a34a', tip:'Total income from all sales in selected period.' },
     { label:'Net Profit', val:fmt(totalProfit), sub:`Margin: ${totalRev>0?((totalProfit/totalRev)*100).toFixed(1):0}%`, color: totalProfit>=0?'#16a34a':'#dc2626', tip:'Revenue minus cost of goods sold.' },
     { label:'Revenue Growth', val:trendArrow(revGrowth), sub:'vs last month', color:'#2563eb', tip:'% change in this month revenue vs last month.' },
-    { label:'Profit Growth',  val:trendArrow(proGrowth), sub:'vs last month', color:'#7c3aed', tip:'% change in this month profit vs last month.' },
+    { label:'Avg. Basket', val:fmt(avgBasket), sub:`${txnCount} transactions`, color:'#7c3aed', tip:'Average revenue per transaction (basket size). Higher = customers buying more per visit.' },
     { label:'Inventory Turnover', val:invTurnover, sub:'COGS ÷ avg stock value', color:'#d97706', tip:'How many times inventory is sold & replaced. Higher = more efficient. Formula: COGS ÷ Stock Value.' },
     { label:'Stock Value', val:fmt(stockVal), sub:`${state.inventory.length} items`, color:'#64748b', tip:'Total cost value of all current inventory.' },
   ];
@@ -2440,26 +2761,23 @@ function confirmRequest(reqId) {
 
     if (qty <= 0) return; // skip zero-qty items
 
-    // Update or create inventory
+    // Update or create inventory via centralised refill helper
     const existing = state.inventory.find(i=>i.name.toLowerCase()===item.name.toLowerCase());
     if (existing) {
-      existing.qty += qty;
-      if (unitCost > 0) existing.cost = unitCost; // update cost to latest
+      _applyRefill(existing, { qty, cost: unitCost||existing.cost, sell: existing.sell, mrp: existing.mrp, supplierId: req.supplierId, notes: `Confirmed from request ${reqId}`, invoice: req.id, date: new Date().toISOString().slice(0,10) });
       updatedCount++;
     } else {
       state.inventory.push({
         id:        Math.floor(Date.now()) + idx + 1,
-        name:      item.name,
-        cat:       cat,
-        qty:       qty,
-        unit:      unit,
-        cost:      unitCost,
-        sell:      0,
-        mrp:       0,
-        alert:     5,
-        expiry:    '',
-        createdAt: new Date().toISOString().slice(0,10) // date added — used for dead stock calculation
+        name:      item.name, cat, qty, unit,
+        cost:      unitCost, sell: 0, mrp: 0, alert: 5, expiry: '',
+        supplierId: req.supplierId,
+        refillHistory: [],
+        createdAt: new Date().toISOString().slice(0,10)
       });
+      // Seed initial refill history for the new item
+      const newItem = state.inventory.at(-1);
+      _applyRefill(newItem, { qty: 0, cost: unitCost, sell: 0, mrp: 0, supplierId: req.supplierId, notes: `Created from request ${reqId}`, invoice: req.id, date: new Date().toISOString().slice(0,10) });
       newItemsCount++;
     }
 
