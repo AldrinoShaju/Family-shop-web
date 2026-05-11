@@ -551,10 +551,11 @@ function migrateState() {
     if (s.profit === undefined)  s.profit  = parseFloat((s.revenue - s.qty * s.cost).toFixed(2));
   });
 
-  // Feature 2: Ensure inventory items have expiry and mrp fields
+  // Feature 2: Ensure inventory items have expiry, mrp, and createdAt fields
   state.inventory.forEach(i => {
-    if (i.expiry === undefined) i.expiry = '';   // empty string = no expiry set
-    if (i.mrp    === undefined) i.mrp    = 0;
+    if (i.expiry    === undefined) i.expiry    = '';
+    if (i.mrp       === undefined) i.mrp       = 0;
+    if (!i.createdAt)              i.createdAt = new Date().toISOString().slice(0,10); // fallback: today for old items
   });
 }
 
@@ -673,7 +674,8 @@ function addInventory() {
     state.inventory.push({
       id: Date.now(), name, cat: document.getElementById('inv-cat').value,
       qty, unit: document.getElementById('inv-unit').value,
-      cost, sell, mrp, alert, expiry
+      cost, sell, mrp, alert, expiry,
+      createdAt: new Date().toISOString().slice(0,10) // date added — used for dead stock calculation
     });
     toast(`"${name}" added to inventory`);
   }
@@ -1088,7 +1090,7 @@ function addPurchase() {
   const unitCost = cost > 0 ? parseFloat((cost/qty).toFixed(4)) : 0;
   const existing = state.inventory.find(i=>i.name.toLowerCase()===item.toLowerCase());
   if (existing) { existing.qty+=qty; if(unitCost>0) existing.cost=unitCost; toast(`"${item}" restocked (+${qty} ${unit})`); }
-  else { state.inventory.push({id:Math.floor(Date.now())+1,name:item,cat:'Other',qty,unit,cost:unitCost,sell:0,mrp:0,alert:5,expiry:''}); toast(`"${item}" added to inventory — set selling price`); }
+  else { state.inventory.push({id:Math.floor(Date.now())+1,name:item,cat:'Other',qty,unit,cost:unitCost,sell:0,mrp:0,alert:5,expiry:'',createdAt:new Date().toISOString().slice(0,10)}); toast(`"${item}" added to inventory — set selling price`); }
   state.purchases.push({id:Date.now(),supplierId:supId,supplier:supName,item,qty,unit,cost,invoice:inv,date});
   save();
   ['sup-item','sup-qty','sup-cost','sup-inv'].forEach(id=>document.getElementById(id).value='');
@@ -1896,14 +1898,20 @@ function renderStockHealthTab(sales) {
     const totalSold = state.sales.filter(s=>s.itemName===i.name).reduce((t,s)=>t+s.qty,0);
     const days = daysToDeplete(i.name, i.qty);
     const lastSale = state.sales.filter(s=>s.itemName===i.name).map(s=>s.date).sort().at(-1)||null;
-    const daysSinceSale = lastSale ? Math.round((Date.now()-new Date(lastSale))/86400000) : 999;
+    // For never-sold items: compare from createdAt (when added to inventory), NOT 999.
+    // This prevents newly added items from falsely appearing as dead stock.
+    const referenceDate = lastSale || i.createdAt || new Date().toISOString().slice(0,10);
+    const daysSinceSale = Math.round((Date.now() - new Date(referenceDate)) / 86400000);
+    const neverSold     = !lastSale; // true if item has never been sold
     const turnover = (i.qty+totalSold)>0 ? (totalSold/(i.qty+totalSold)*100).toFixed(0) : 0;
-    return {...i, sold30, totalSold, days, lastSale, daysSinceSale, turnover};
+    return {...i, sold30, totalSold, days, lastSale, daysSinceSale, neverSold, turnover};
   });
 
   const fast = itemData.filter(i=>i.sold30>=5).sort((a,b)=>b.sold30-a.sold30);
-  const dead = itemData.filter(i=>i.qty>0&&i.daysSinceSale>30);
-  const slow = itemData.filter(i=>i.qty>0&&i.sold30<2&&i.daysSinceSale<=30&&i.totalSold>0);
+  // Dead stock: item has stock AND (was once sold but not in 30+ days) OR (never sold and added 30+ days ago)
+  const dead = itemData.filter(i => i.qty > 0 && i.daysSinceSale > 30);
+  // Slow stock: has stock, has been sold before, but very few sales in last 30 days
+  const slow = itemData.filter(i => i.qty > 0 && !i.neverSold && i.sold30 < 2 && i.daysSinceSale <= 30);
 
   fastEl.innerHTML = fast.length===0
     ? '<div class="empty-state" style="padding:16px"><i class="bi bi-fire"></i>No fast-moving items in last 30 days</div>'
@@ -1916,7 +1924,12 @@ function renderStockHealthTab(sales) {
         <div class="expiry-item ${i.type==='dead'?'expiry-expired':'expiry-soon'}" style="margin-bottom:6px">
           <div><span style="font-weight:600">${i.name}</span> <span style="font-size:11px;color:var(--muted)">${i.qty} ${i.unit}</span></div>
           <div style="text-align:right;font-size:12px">
-            ${i.type==='dead'?`<span style="color:var(--red);font-weight:600">No sale in ${i.daysSinceSale}d</span>`:`<span style="color:var(--amber);font-weight:600">Only ${i.sold30.toFixed(1)} sold/30d</span>`}
+            ${i.type==='dead'
+              ? i.neverSold
+                ? `<span style="color:var(--red);font-weight:600">Added ${i.daysSinceSale}d ago, never sold</span>`
+                : `<span style="color:var(--red);font-weight:600">No sale in ${i.daysSinceSale}d</span>`
+              : `<span style="color:var(--amber);font-weight:600">Only ${i.sold30.toFixed(1)} sold/30d</span>`
+            }
           </div>
         </div>`).join('');
 
@@ -1925,7 +1938,9 @@ function renderStockHealthTab(sales) {
   hEl.innerHTML=`<div class="gs-table-wrap desktop-table"><table class="gs-table">
     <thead><tr><th>Item</th><th>Stock</th><th>Sold 30d</th><th>Total sold</th><th>Sell-through % <span class="an-info">ℹ<span class="an-tip">Sell-through Rate = Total Sold ÷ (Total Sold + Current Stock) × 100. Higher % = better stock efficiency.</span></span></th><th>Days to deplete</th><th>Status</th></tr></thead><tbody>`
     + itemData.sort((a,b)=>b.sold30-a.sold30).map(i=>{
-        const status = i.daysSinceSale>30&&i.qty>0?'🪦 Dead':i.sold30>=5?'🔥 Fast':i.sold30<2&&i.qty>0?'🐢 Slow':'→ Normal';
+        const status = i.daysSinceSale>30&&i.qty>0
+          ? (i.neverSold ? '🆕 New (unsold)' : '🪦 Dead')
+          : i.sold30>=5?'🔥 Fast':i.sold30<2&&i.qty>0?'🐢 Slow':'→ Normal';
         const deplete = i.days===null?'—':(i.days<=7?`<span style="color:var(--red);font-weight:600">${i.days}d ⚠</span>`:i.days<=14?`<span style="color:var(--amber);font-weight:600">${i.days}d</span>`:`${i.days}d`);
         return `<tr>
           <td style="font-weight:600">${i.name}</td>
@@ -1938,7 +1953,9 @@ function renderStockHealthTab(sales) {
         </tr>`;
       }).join('')+'</tbody></table></div>'
     + '<div class="mobile-list">'+itemData.sort((a,b)=>b.sold30-a.sold30).map(i=>{
-        const status=i.daysSinceSale>30&&i.qty>0?'🪦 Dead':i.sold30>=5?'🔥 Fast':i.sold30<2&&i.qty>0?'🐢 Slow':'→ Normal';
+        const status=i.daysSinceSale>30&&i.qty>0
+          ? (i.neverSold?'🆕 New (unsold)':'🪦 Dead')
+          : i.sold30>=5?'🔥 Fast':i.sold30<2&&i.qty>0?'🐢 Slow':'→ Normal';
         return `<div class="mc"><div class="mc-top"><span class="mc-name">${i.name}</span><span>${status}</span></div>
           <div class="mc-meta"><span>Stock: ${i.qty} ${i.unit}</span><span>Sold 30d: ${i.sold30.toFixed(1)}</span><span>Sell-through: ${i.turnover}%</span>${i.days?`<span>Depletes in: ${i.days}d</span>`:''}</div></div>`;
       }).join('')+'</div>';
@@ -2073,11 +2090,12 @@ function generateInsights(sales) {
   const bestMargin = stats.filter(d=>d.qty>2).sort((a,b)=>parseFloat(b.margin)-parseFloat(a.margin))[0];
   if (bestMargin) insights.push({type:'positive',icon:'💰',text:`"${bestMargin.name}" has the highest profit margin at ${bestMargin.margin}%`,sub:`Revenue: ${fmt(bestMargin.rev)}, Profit: ${fmt(bestMargin.profit)}`});
 
-  // Dead stock
-  const dead = state.inventory.filter(i=>{
+  // Dead stock: has stock AND (last sale was 30+ days ago OR never sold but added 30+ days ago)
+  const dead = state.inventory.filter(i => {
     if (!i.qty) return false;
-    const last = state.sales.filter(s=>s.itemName===i.name).map(s=>s.date).sort().at(-1);
-    return !last || Math.round((Date.now()-new Date(last))/86400000)>30;
+    const lastSale = state.sales.filter(s=>s.itemName===i.name).map(s=>s.date).sort().at(-1);
+    const refDate  = lastSale || i.createdAt || new Date().toISOString().slice(0,10);
+    return Math.round((Date.now() - new Date(refDate)) / 86400000) > 30;
   });
   if (dead.length>0) insights.push({type:'warning',icon:'🪦',text:`${dead.length} item${dead.length>1?'s are':' is'} dead stock (no sales in 30+ days)`,sub:dead.slice(0,3).map(i=>i.name).join(', ')+(dead.length>3?'…':'')});
 
@@ -2414,16 +2432,17 @@ function confirmRequest(reqId) {
       updatedCount++;
     } else {
       state.inventory.push({
-        id:     Math.floor(Date.now()) + idx + 1,   // integer ID — no float
-        name:   item.name,
-        cat:    cat,
-        qty:    qty,
-        unit:   unit,
-        cost:   unitCost,
-        sell:   0,    // default — user must set sell price
-        mrp:    0,
-        alert:  5,
-        expiry: ''
+        id:        Math.floor(Date.now()) + idx + 1,
+        name:      item.name,
+        cat:       cat,
+        qty:       qty,
+        unit:      unit,
+        cost:      unitCost,
+        sell:      0,
+        mrp:       0,
+        alert:     5,
+        expiry:    '',
+        createdAt: new Date().toISOString().slice(0,10) // date added — used for dead stock calculation
       });
       newItemsCount++;
     }
