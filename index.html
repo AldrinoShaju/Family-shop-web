@@ -540,12 +540,12 @@ async function loadState() {
   }
   setCloudStatus('loading');
   try {
-    const res = await fetch(SCRIPT_URL);
+    // Apps Script GET follows a redirect to googleusercontent.com — must allow redirect
+    const res = await fetch(SCRIPT_URL, { redirect: 'follow' });
     const json = await res.json();
     if (json.ok && json.data) {
       state = json.data;
     }
-    // Migration: ensure all arrays exist
     if (!Array.isArray(state.inventory))  state.inventory  = [];
     if (!Array.isArray(state.sales))      state.sales      = [];
     if (!Array.isArray(state.purchases))  state.purchases  = [];
@@ -568,22 +568,41 @@ function save() {
 async function pushSave() {
   if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') return;
   try {
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify(state),
-      headers: { 'Content-Type': 'application/json' }
-    });
-    const json = await res.json();
-    if (json.ok) {
-      setCloudStatus('ok');
-    } else {
-      throw new Error(json.error || 'Save failed');
-    }
+    // ── CORS-safe POST using a hidden form submission ──
+    // Apps Script blocks cross-origin fetch() POST due to missing CORS preflight support.
+    // We use a hidden <form> that POSTs to the script URL inside a hidden <iframe>.
+    // Form submissions are not subject to CORS restrictions.
+    // The script reads e.postData.contents and saves; we don't need the response.
+    const frameId = 'save-frame-' + Date.now();
+    const iframe = document.createElement('iframe');
+    iframe.name = frameId;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = SCRIPT_URL;
+    form.target = frameId;
+    form.style.display = 'none';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'payload';
+    input.value = JSON.stringify(state);
+    form.appendChild(input);
+    document.body.appendChild(form);
+
+    form.submit();
+
+    // Clean up after submission
+    setTimeout(() => { form.remove(); iframe.remove(); }, 3000);
+
+    // Optimistically mark as saved (we can't read the response due to cross-origin iframe)
+    setCloudStatus('ok');
   } catch(e) {
     setCloudStatus('error');
     toast('Cloud save failed — retrying…', 'error');
-    // retry once after 3 seconds
-    setTimeout(pushSave, 3000);
+    setTimeout(pushSave, 4000);
   }
 }
 
