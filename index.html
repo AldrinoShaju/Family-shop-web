@@ -1815,7 +1815,7 @@ function renderKPIRow(sales) {
     { label:'Stock Value', val:fmt(stockVal), sub:`${state.inventory.length} items`, color:'#64748b', tip:'Total cost value of all current inventory.' },
   ];
   el.innerHTML = `<div class="row g-3">`
-    + kpis.map(k=>`<div class="col-6 col-md-4 col-lg-2"><div class="kpi-card" style="--kpi-color:${k.color}">
+    + kpis.map(k=>`<div class="col-12 col-sm-6 col-md-4 col-lg-2"><div class="kpi-card" style="--kpi-color:${k.color}">
         <div class="kpi-label">${k.label} <span class="an-info" tabindex="0">ℹ<span class="an-tip">${k.tip}</span></span></div>
         <div class="kpi-value">${k.val}</div>
         <div class="kpi-sub">${k.sub}</div>
