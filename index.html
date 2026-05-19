@@ -470,13 +470,13 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 .ledger-row .lr-amt.debit{color:var(--red)}
 .ledger-row .lr-amt.credit{color:var(--green)}
 .ledger-row .lr-bal{font-family:'DM Mono',monospace;text-align:right;font-weight:600}
-.repay-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:2100;display:flex;align-items:center;justify-content:center;padding:16px}
-.repay-modal{background:#fff;border-radius:14px;width:100%;max-width:440px;overflow:hidden;display:flex;flex-direction:column}
-.repay-modal-head{padding:16px 20px;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff}
+.repay-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:2100;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.repay-modal{background:#fff;border-radius:14px;width:100%;max-width:440px;max-height:calc(100vh - 32px);overflow:hidden;display:flex;flex-direction:column}
+.repay-modal-head{padding:16px 20px;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;flex-shrink:0}
 .repay-modal-head h3{margin:0;font-size:18px;font-weight:600}
 .repay-modal-head .due-amt{font-family:'DM Mono',monospace;font-size:24px;font-weight:700;margin-top:6px}
-.repay-modal-body{padding:18px 20px}
-.repay-modal-footer{padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px}
+.repay-modal-body{padding:18px 20px;overflow-y:auto;flex:1 1 auto;min-height:0;-webkit-overflow-scrolling:touch}
+.repay-modal-footer{padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;flex-shrink:0;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 .repay-quick-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .repay-quick-btn{padding:6px 12px;background:#f1f5f9;border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;color:var(--ink)}
 .repay-quick-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
