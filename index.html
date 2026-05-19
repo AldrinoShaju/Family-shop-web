@@ -521,6 +521,9 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
   <button class="nav-item" data-page="pnl"><i class="bi bi-bar-chart-fill"></i> P&amp;L Report</button>
   <div class="sidebar-footer">
     <button class="nav-item" id="btn-export" style="color:var(--muted)"><i class="bi bi-download"></i> Export CSV</button>
+    <button class="nav-item" onclick="downloadFullBackup()" style="color:var(--blue)"><i class="bi bi-cloud-download-fill"></i> Backup all data</button>
+    <button class="nav-item" onclick="document.getElementById('restore-file-input').click()" style="color:#7c3aed"><i class="bi bi-cloud-upload-fill"></i> Restore from backup</button>
+    <input type="file" id="restore-file-input" accept=".json,application/json" style="display:none" onchange="restoreFromBackup(event)">
     <button class="nav-item" id="btn-clear" style="color:var(--red)"><i class="bi bi-trash3"></i> Clear all data</button>
   </div>
 </nav>
@@ -903,7 +906,7 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 // ═══════════════════════════════════════════════════════════════════
 //  CLOUD PERSISTENCE — Google Apps Script
 // ═══════════════════════════════════════════════════════════════════
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9IqTFoN9EEXVjTbEJF7ebkbMyeC3lz0sdkc8Oj5fcRgDnxZYR9ezMrWsglvfIDUzL/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw4l5d_6LtDIsPy-7NSq2LSlF1QqaPHp0sdoagFOttvK4TSxSd7bfnD1XqEMyIa9t22gg/exec';
 let state = { inventory: [], sales: [], purchases: [], suppliers: [], supplierRequests: [], transactions: [], customers: [] };
 let _saveTimer = null;
 
@@ -1074,44 +1077,95 @@ function migrateState() {
   });
 }
 
+// Save coalescing tuning:
+//  • DEBOUNCE_MS — wait this long after the LAST change before sending to cloud.
+//    Higher = fewer cloud writes when the user is rapidly editing; lower = more
+//    eager sync. After v3 backend optimizations, cloud saves are sub-second,
+//    so we can use a shorter debounce.
+//  • _pushInFlight — guards against starting a new POST while one is still
+//    in flight. If a change happens during a push, the timer is rescheduled
+//    so a follow-up save will catch the latest state.
+const SAVE_DEBOUNCE_MS = 1200;
+let _pushInFlight = false;
+let _pendingAfterPush = false;
+
 function save() {
   // state.sales is a DERIVED view — exclude it from storage to avoid bloat.
   // It is always rebuilt from state.transactions on load via migrateState().
-  const toSave = Object.assign({}, state, { sales: [] });
-  try { localStorage.setItem('gsm_cloud_cache', JSON.stringify(toSave)); } catch(e){}
-  clearTimeout(_saveTimer); setCloudStatus('pending');
-  _saveTimer = setTimeout(function(){ pushSave(toSave); }, 800);
+  try { localStorage.setItem('gsm_cloud_cache', JSON.stringify(Object.assign({}, state, { sales: [] }))); } catch(e){}
+  // Show INSTANT feedback — local cache is written. Cloud sync is best-effort
+  // and happens after the debounce. The cloud-status indicator will update
+  // again when the actual POST completes.
+  setCloudStatus('saved-local');
+  clearTimeout(_saveTimer);
+  if (_pushInFlight) {
+    _pendingAfterPush = true;
+    return;
+  }
+  _saveTimer = setTimeout(function(){
+    pushSave(Object.assign({}, state, { sales: [] }));
+  }, SAVE_DEBOUNCE_MS);
 }
 
 async function pushSave(toSave) {
   if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_APPS_SCRIPT_URL_HERE') return;
+  if (_pushInFlight) { _pendingAfterPush = true; return; }
+  _pushInFlight = true;
+  _pendingAfterPush = false;
+
   const body = toSave ? JSON.stringify(toSave) : JSON.stringify(Object.assign({}, state, { sales: [] }));
+
+  // The client uses mode:'no-cors' so we can NEVER read the response — the
+  // promise resolves the moment the request reaches the network. So the
+  // moment fetch() resolves we should treat it as "sent". Don't await the
+  // server's actual processing.
+  const fetchOpts = { method: 'POST', mode: 'no-cors', body, keepalive: true };
+
+  // Safety net: if the network is unreachable, fetch() may hang. We race it
+  // against an 8s timeout so the UI never freezes waiting for a response
+  // that can't arrive. (no-cors fetches won't throw on cloud-side errors;
+  // they only fail on network/CORS issues.)
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000));
+
   try {
-    await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body });
+    await Promise.race([fetch(SCRIPT_URL, fetchOpts), timeout]);
     setCloudStatus('ok');
   } catch(e) {
-    // no-cors fetch failures are usually CORS/network issues (e.g. file://)
-    // Show offline indicator but don't spam retries
+    // Network failure (offline, CORS, timeout). Show local-only indicator.
     const ind = document.getElementById('saveIndicator');
-    ind.innerHTML = '<i class="bi bi-cloud-slash-fill"></i> Saved locally (cloud offline)';
-    ind.style.color = 'var(--amber)';
-    ind.classList.add('show');
-    // Only retry once after 8s — if still failing, stay silent
-    setTimeout(async ()=>{
+    if (ind) {
+      ind.innerHTML = '<i class="bi bi-cloud-slash-fill"></i> Saved locally (cloud offline)';
+      ind.style.color = 'var(--amber)';
+      ind.classList.add('show');
+    }
+    // One retry after 10s. If it fails, stay silent.
+    setTimeout(async () => {
       try {
-        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(state) });
+        await Promise.race([fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(Object.assign({}, state, { sales: [] })), keepalive: true }), new Promise((_, r)=>setTimeout(()=>r(new Error('timeout')),8000))]);
         setCloudStatus('ok');
-      } catch(e2){ /* stay on local-only mode silently */ }
-    }, 8000);
+      } catch(e2) { /* stay silent */ }
+    }, 10000);
+  } finally {
+    _pushInFlight = false;
+    // If a save was requested while we were pushing, schedule another push
+    // with the very latest state.
+    if (_pendingAfterPush) {
+      _pendingAfterPush = false;
+      setCloudStatus('pending');
+      _saveTimer = setTimeout(function(){
+        pushSave(Object.assign({}, state, { sales: [] }));
+      }, SAVE_DEBOUNCE_MS);
+    }
   }
 }
 
 function setCloudStatus(status) {
   const ind = document.getElementById('saveIndicator'); ind.classList.add('show');
   if (status==='loading') { ind.innerHTML='<i class="bi bi-cloud-arrow-down-fill"></i> Loading…'; ind.style.color='var(--blue)'; }
-  else if (status==='pending') { ind.innerHTML='<i class="bi bi-cloud-upload"></i> Saving…'; ind.style.color='var(--amber)'; }
-  else if (status==='ok') { ind.innerHTML='<i class="bi bi-cloud-check-fill"></i> Saved to cloud'; ind.style.color='var(--green)'; setTimeout(()=>ind.classList.remove('show'),2500); }
-  else if (status==='error') { ind.innerHTML='<i class="bi bi-cloud-slash-fill"></i> Save error'; ind.style.color='var(--red)'; }
+  else if (status==='saved-local') { ind.innerHTML='<i class="bi bi-check2-circle"></i> Saved'; ind.style.color='var(--green)'; /* stays visible until cloud sync resolves */ }
+  else if (status==='pending') { ind.innerHTML='<i class="bi bi-cloud-upload"></i> Syncing…'; ind.style.color='var(--amber)'; }
+  else if (status==='ok') { ind.innerHTML='<i class="bi bi-cloud-check-fill"></i> Synced'; ind.style.color='var(--green)'; setTimeout(()=>ind.classList.remove('show'),1500); }
+  else if (status==='error') { ind.innerHTML='<i class="bi bi-cloud-slash-fill"></i> Sync error'; ind.style.color='var(--red)'; }
 }
 
 function showConfigBanner() {
@@ -2068,6 +2122,94 @@ function clearAllData() {
   if (typed !== 'DELETE') { toast('Cancelled — nothing was deleted'); return; }
   state = { inventory:[], sales:[], purchases:[], suppliers:[], supplierRequests:[], transactions:[], customers:[] };
   save(); toast('All data cleared'); renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  FULL DATA BACKUP / RESTORE
+// ═══════════════════════════════════════════════════════════════════
+//  These let you save the entire app state (every customer, transaction,
+//  inventory item, supplier, request, adjustment, payment, etc.) to a
+//  single .json file you can keep anywhere — Drive, email, USB stick.
+//  And restore from that file if needed (for example, after switching
+//  to a new cloud backend, or just for monthly archival).
+//
+//  The file format is the same JSON the cloud backend stores. It is
+//  human-readable and forward-compatible: the app's migrateState()
+//  handles any legacy shape on load.
+// ═══════════════════════════════════════════════════════════════════
+function downloadFullBackup() {
+  try {
+    // Snapshot of the in-memory state, EXCLUDING the derived `sales` array
+    // (it gets rebuilt from transactions on restore via migrateState).
+    const snapshot = Object.assign({}, state, { sales: [] });
+    const json     = JSON.stringify(snapshot, null, 2);   // pretty-printed for human review
+    const blob     = new Blob([json], { type: 'application/json' });
+    const url      = URL.createObjectURL(blob);
+    const a        = document.createElement('a');
+    const stamp    = new Date().toISOString().slice(0,19).replace(/[:T]/g, '-');
+    a.href     = url;
+    a.download = `grocery-store-backup_${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+    const sizeKb = (json.length / 1024).toFixed(1);
+    toast(`Backup downloaded (${sizeKb} KB)`);
+  } catch (e) {
+    toast('Backup failed: ' + (e && e.message || e), 'error');
+  }
+}
+
+function restoreFromBackup(ev) {
+  const file = ev && ev.target && ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function() {
+    let parsed;
+    try {
+      parsed = JSON.parse(reader.result);
+    } catch (e) {
+      toast('Backup file is not valid JSON', 'error');
+      ev.target.value = ''; return;
+    }
+    if (!parsed || typeof parsed !== 'object' || (!Array.isArray(parsed.inventory) && !Array.isArray(parsed.transactions))) {
+      toast('This does not look like a grocery-store backup file', 'error');
+      ev.target.value = ''; return;
+    }
+    const summary = [
+      `${(parsed.inventory||[]).length} items`,
+      `${(parsed.transactions||[]).length} transactions`,
+      `${(parsed.customers||[]).length} customers`,
+      `${(parsed.suppliers||[]).length} suppliers`,
+      `${(parsed.supplierRequests||[]).length} requests`
+    ].join(' · ');
+    if (!confirm(`Restore from this backup?\n\nContains: ${summary}\n\n⚠ This will REPLACE all current data. Your current data will be saved as a separate backup first.`)) {
+      ev.target.value = ''; return;
+    }
+    // Snapshot current state to local download before overwriting (safety net)
+    try {
+      const safety = JSON.stringify(Object.assign({}, state, { sales: [] }), null, 2);
+      const blob   = new Blob([safety], { type: 'application/json' });
+      const url    = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g, '-');
+      a.href = url;
+      a.download = `grocery-store-PRE-RESTORE-backup_${stamp}.json`;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+    } catch (e) { /* non-fatal */ }
+    // Apply
+    state = parsed;
+    migrateState();
+    save();
+    renderAll();
+    toast(`Restored: ${summary}`);
+    ev.target.value = '';
+  };
+  reader.onerror = function() {
+    toast('Could not read backup file', 'error');
+    ev.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 // ═══════════════════════════════════════════════════════════════════
