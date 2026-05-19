@@ -445,6 +445,27 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 .ledger-row{display:grid;grid-template-columns:90px 1fr 110px 110px 110px;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);align-items:center;font-size:12px}
 .ledger-row.header{font-weight:600;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em;background:var(--surface);border-radius:8px 8px 0 0}
 .ledger-row.payment{background:#f0fdf4}
+.ledger-row.adjustment{background:#eff6ff}
+.ledger-row.adjustment.reduce{background:#fef3c7}
+.adj-event-pill{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;text-transform:uppercase;letter-spacing:.04em;margin-right:4px;vertical-align:middle}
+.adj-pill-add{background:#fee2e2;color:#b91c1c}
+.adj-pill-reduce{background:#dcfce7;color:#15803d}
+.adj-pill-prev{background:#e0e7ff;color:#4338ca}
+.adj-pill-correct{background:#fef3c7;color:#a16207}
+.adj-pill-settle{background:#dbeafe;color:#1e40af}
+.adj-pill-waiver{background:#f0fdf4;color:#16a34a}
+.adj-type-card{padding:10px 12px;border:1px solid var(--border);border-radius:10px;cursor:pointer;text-align:left;background:#fff;transition:.12s ease;display:flex;flex-direction:column;gap:2px;-webkit-tap-highlight-color:transparent}
+.adj-type-card:hover{border-color:var(--blue);background:#eff6ff}
+.adj-type-card.selected{border-color:var(--blue);background:#dbeafe;box-shadow:0 0 0 2px rgba(37,99,235,.18)}
+.adj-type-card .at-name{font-size:13px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px}
+.adj-type-card .at-direction{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.adj-type-card .at-direction.add{color:var(--red)}
+.adj-type-card .at-direction.reduce{color:var(--green)}
+.adj-type-card .at-direction.dual{color:var(--amber)}
+.adj-type-card .at-desc{font-size:10px;color:var(--muted)}
+.adj-preview-box{background:#f1f5f9;border:1px dashed var(--border);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:12px}
+.adj-preview-box .row-pl{display:flex;justify-content:space-between;padding:2px 0}
+.adj-preview-box .new-bal{font-weight:700;font-family:'DM Mono',monospace;font-size:14px}
 .ledger-row .lr-amt{font-family:'DM Mono',monospace;text-align:right}
 .ledger-row .lr-amt.debit{color:var(--red)}
 .ledger-row .lr-amt.credit{color:var(--green)}
@@ -564,7 +585,7 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
         <div class="col-6 col-sm-4 col-md-2"><label class="form-label">Cost price (₹)</label><input type="number" class="form-control" id="inv-cost" placeholder="0.00" step="0.01" inputmode="decimal"></div>
         <div class="col-6 col-sm-4 col-md-2"><label class="form-label">Selling price (₹)</label><input type="number" class="form-control" id="inv-sell" placeholder="0.00" step="0.01" inputmode="decimal"></div>
         <div class="col-6 col-sm-4 col-md-2"><label class="form-label">MRP (₹)</label><input type="number" class="form-control" id="inv-mrp" placeholder="0.00" step="0.01" inputmode="decimal"></div>
-        <div class="col-6 col-sm-2 col-md-1"><label class="form-label">Alert at</label><input type="number" class="form-control" id="inv-alert" placeholder="5" min="0" inputmode="numeric"></div>
+        <div class="col-6 col-sm-2 col-md-1"><label class="form-label" title="Set to 0 or leave empty to disable low-stock alerts for this item">Alert at <i class="bi bi-info-circle" style="font-size:10px;color:var(--muted)"></i></label><input type="number" class="form-control" id="inv-alert" placeholder="0 = no alert" min="0" inputmode="numeric"></div>
         <!-- NEW: Expiry date field (optional) -->
         <div class="col-6 col-sm-4 col-md-3"><label class="form-label">Expiry date <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none">(optional)</span></label><input type="date" class="form-control" id="inv-expiry"></div>
       </div>
@@ -955,6 +976,7 @@ function migrateState() {
   state.customers.forEach(c => {
     if (!c.createdAt)              c.createdAt = new Date().toISOString();
     if (!Array.isArray(c.payments)) c.payments = [];   // standalone repayments not tied to a single txn
+    if (!Array.isArray(c.adjustments)) c.adjustments = [];  // manual balance adjustments (audit trail)
   });
 
   // ── MIGRATION: convert old flat state.sales into grouped state.transactions ──
@@ -1194,6 +1216,42 @@ function fmtExpiry(expiryStr) {
   return d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  LOW-STOCK ALERT PREDICATES (single source of truth)
+// ═══════════════════════════════════════════════════════════════════
+//  An item's alert is "enabled" when item.alert is a positive number.
+//  Values that DISABLE alerting:  0,  null,  undefined,  '',  NaN,  negative.
+//
+//  Use these helpers everywhere instead of inlining `qty <= alert`,
+//  so disabling propagates consistently to dashboard / reports / analytics
+//  without duplicated checks.
+// ═══════════════════════════════════════════════════════════════════
+function isLowStockAlertEnabled(item) {
+  if (!item) return false;
+  const a = item.alert;
+  return typeof a === 'number' && isFinite(a) && a > 0;
+}
+function isLowOnStock(item) {
+  return isLowStockAlertEnabled(item) && item.qty <= item.alert;
+}
+// Parse an alert input value. Returns:
+//   • a number ≥ 0 (where 0 = disabled)
+//   • a default if the field is truly empty AND allowDefault===true
+//   • null if invalid (negative, NaN)
+// Used by both add and edit forms.
+function parseAlertInput(rawValue, opts) {
+  opts = opts || {};
+  const allowDefault = opts.allowDefault !== false;
+  const defaultVal   = (typeof opts.defaultVal === 'number') ? opts.defaultVal : 5;
+  if (rawValue === undefined || rawValue === null) return allowDefault ? defaultVal : 0;
+  const trimmed = String(rawValue).trim();
+  if (trimmed === '') return allowDefault ? defaultVal : 0;
+  const n = parseFloat(trimmed);
+  if (isNaN(n) || !isFinite(n)) return null;  // invalid → caller shows error
+  if (n < 0) return null;                     // negative → invalid
+  return n;
+}
+
 function toast(msg, type='success') {
   const el = document.createElement('div'); el.className = `toast-msg ${type}`;
   el.innerHTML = `<i class="bi bi-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
@@ -1237,7 +1295,9 @@ function addInventory() {
   const cost   = parseFloat(document.getElementById('inv-cost').value)||0;
   const sell   = parseFloat(document.getElementById('inv-sell').value)||0;
   const mrp    = parseFloat(document.getElementById('inv-mrp').value)||0;
-  const alert  = parseFloat(document.getElementById('inv-alert').value)||5;
+  const alertRaw = document.getElementById('inv-alert').value;
+  const alert  = parseAlertInput(alertRaw, { allowDefault: true, defaultVal: 5 });
+  if (alert === null) { document.getElementById('inv-alert').focus(); toast('Low stock alert must be 0 (to disable) or a positive number','error'); return; }
   const expiry = document.getElementById('inv-expiry').value || '';
   if (!name) { document.getElementById('inv-name').focus(); toast('Please enter an item name','error'); return; }
   const existing = state.inventory.find(i=>i.name.toLowerCase()===name.toLowerCase());
@@ -1952,7 +2012,7 @@ function openEditModal(id) {
       <div><label class="form-label">Cost price (₹)</label><input class="form-control" type="number" id="em-cost" value="${i.cost}" step="0.01" inputmode="decimal"></div>
       <div><label class="form-label" style="color:#16a34a;font-weight:700">Selling price (₹) ★</label><input class="form-control" type="number" id="em-sell" value="${i.sell}" step="0.01" inputmode="decimal" style="border-color:#16a34a"></div>
       <div><label class="form-label">MRP (₹)</label><input class="form-control" type="number" id="em-mrp" value="${i.mrp||''}" placeholder="0.00" step="0.01" inputmode="decimal"></div>
-      <div><label class="form-label">Low stock alert at</label><input class="form-control" type="number" id="em-alert" value="${i.alert}" min="0" inputmode="numeric"></div>
+      <div><label class="form-label" title="Set to 0 or leave empty to disable low-stock alerts for this item">Low stock alert at <i class="bi bi-info-circle" style="font-size:10px;color:var(--muted)"></i></label><input class="form-control" type="number" id="em-alert" value="${isLowStockAlertEnabled(i) ? i.alert : 0}" min="0" placeholder="0 = no alert" inputmode="numeric"><div style="font-size:10px;color:var(--muted);margin-top:3px">${isLowStockAlertEnabled(i) ? 'Alerts on when qty ≤ this value' : '⚠ Alerts <strong>disabled</strong> for this item'}</div></div>
       <div><label class="form-label">Expiry date <span style="font-size:10px;font-weight:400;text-transform:none">(optional)</span></label><input class="form-control" type="date" id="em-expiry" value="${i.expiry||''}"></div>
     </div>
     <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
@@ -1972,7 +2032,11 @@ function saveEdit(id) {
   i.cost   = parseFloat(document.getElementById('em-cost').value) || 0;
   i.sell   = parseFloat(document.getElementById('em-sell').value) || 0;
   i.mrp    = parseFloat(document.getElementById('em-mrp').value)  || 0;
-  i.alert  = parseFloat(document.getElementById('em-alert').value) || 5;
+  const alertRaw = document.getElementById('em-alert').value;
+  // In edit form, empty input → keep existing; explicit 0 → disable
+  const alertParsed = parseAlertInput(alertRaw, { allowDefault: false });
+  if (alertParsed === null) { document.getElementById('em-alert').focus(); toast('Low stock alert must be 0 (to disable) or a positive number','error'); return; }
+  i.alert  = alertParsed;
   i.expiry = document.getElementById('em-expiry').value || ''; // optional
   document.getElementById('edit-modal-overlay').remove();
   save(); toast('Item updated successfully'); renderAll();
@@ -2044,10 +2108,21 @@ function renderDashboard() {
   const stockValue    = state.inventory.reduce((s,i)=>s+i.qty*i.cost, 0);
   const today         = new Date().toISOString().slice(0,10);
   const todayRev      = state.sales.filter(s=>s.date===today).reduce((s,x)=>s+x.revenue, 0);
-  // Outstanding khata dues
-  const totalDue      = (state.transactions||[]).reduce((s,t)=>s+(t.dueAmount||0),0);
+  // Outstanding khata dues — includes manual adjustments per customer.
+  // Transactions without a linked customer can't be adjusted, so they still
+  // contribute their raw txn.dueAmount.
+  let totalDue = 0, dueCustSet = new Set();
+  (state.customers||[]).forEach(c => {
+    const st = getCustomerStats(c.id);
+    if (st && st.totalDue > 0) { totalDue += st.totalDue; dueCustSet.add(c.id); }
+  });
+  // Walk-in / un-attributed transactions
+  (state.transactions||[]).forEach(t => {
+    if (!t.customerId && (t.dueAmount||0) > 0) totalDue += t.dueAmount;
+  });
+  totalDue = parseFloat(totalDue.toFixed(2));
   const dueTxnCount   = (state.transactions||[]).filter(t=>(t.dueAmount||0)>0).length;
-  const dueCustCount  = new Set((state.transactions||[]).filter(t=>(t.dueAmount||0)>0 && t.customerId).map(t=>t.customerId)).size;
+  const dueCustCount  = dueCustSet.size;
 
   const metrics = [
     {label:"Today's Revenue", value:fmt(todayRev),       icon:'bi-sun',          color:'#2563eb', bg:'#dbeafe'},
@@ -2069,10 +2144,23 @@ function renderDashboard() {
   const margin = totalRevenue > 0 ? ((profit/totalRevenue)*100).toFixed(1) : 0;
   // Cash collected vs receivables
   const totalCollected = (state.transactions||[]).reduce((s,t)=>s+(t.paidAmount||0),0);
+  // Net of manual customer adjustments. Net +ve means more added to dues than reduced;
+  // net -ve means more written off than added (discounts/waivers > additions).
+  let adjAdded = 0, adjReduced = 0;
+  (state.customers||[]).forEach(c => {
+    (c.adjustments||[]).forEach(a => {
+      const d = Number(a.amountDelta) || 0;
+      if (d > 0) adjAdded += d; else adjReduced += -d;
+    });
+  });
+  const adjLine = (adjAdded > 0 || adjReduced > 0)
+    ? `<div class="pnl-row"><span style="color:var(--muted)">— Manual adjustments</span><span style="font-family:'DM Mono',monospace;color:var(--muted)" title="Add: ${fmt(adjAdded)} · Reduce/waive: ${fmt(adjReduced)}">+${fmt(adjAdded)} / −${fmt(adjReduced)}</span></div>`
+    : '';
   document.getElementById('dash-pnl').innerHTML=`
     <div class="pnl-row"><span style="color:var(--muted)">Total Revenue (earned)</span><span style="color:var(--green);font-weight:600">${fmt(totalRevenue)}</span></div>
     <div class="pnl-row"><span style="color:var(--muted)">— Cash collected</span><span style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalCollected)}</span></div>
     <div class="pnl-row"><span style="color:var(--muted)">— Khata receivables</span><span style="color:${totalDue>0?'var(--amber)':'var(--muted)'};font-family:'DM Mono',monospace">${fmt(totalDue)}</span></div>
+    ${adjLine}
     <div class="pnl-row"><span style="color:var(--muted)">Cost of Goods Sold</span><span style="color:var(--red)">${fmt(totalCost)}</span></div>
     <div class="pnl-row"><span style="color:var(--muted)">Supplier Purchases</span><span style="color:var(--red)">${fmt(totalPurchase)}</span></div>
     <div class="pnl-row total"><span>Gross Profit</span><span style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</span></div>
@@ -2176,11 +2264,10 @@ function _resolveItemSupplier(item) {
 }
 
 // Classify urgency. Returns 'out' | 'critical' | 'low'.
+// Precondition: caller has already ensured isLowStockAlertEnabled(item) is true.
 function _lowStockUrgency(item) {
-  if (item.qty <= 0)                                  return 'out';
-  const alert = item.alert || 0;
-  if (alert === 0 && item.qty <= 1)                   return 'critical';
-  if (alert > 0  && item.qty <= alert / 2)            return 'critical';
+  if (item.qty <= 0)                       return 'out';
+  if (item.qty <= (item.alert / 2))        return 'critical';
   return 'low';
 }
 
@@ -2243,7 +2330,7 @@ function renderLowStockAlerts() {
   const el = document.getElementById('dash-lowstock');
   if (!el) return;
 
-  const lowItems = state.inventory.filter(i => i.qty <= i.alert);
+  const lowItems = state.inventory.filter(isLowOnStock);
   if (lowItems.length === 0) {
     el.innerHTML = '<p style="color:var(--muted);font-size:13px"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> All items well stocked</p>';
     return;
@@ -2383,7 +2470,7 @@ function quickRequestFromLowStock(itemId) {
 function quickRequestFromSupplierGroup(supplierId) {
   const sup = state.suppliers.find(s => s.id === supplierId); if (!sup) return;
   const itemsForSup = state.inventory
-    .filter(i => i.qty <= i.alert)
+    .filter(isLowOnStock)
     .filter(i => {
       const r = _resolveItemSupplier(i);
       return r.supplierId === supplierId;
@@ -2513,7 +2600,8 @@ function renderInventoryTable() {
     ? `<div class="alert-low-gs" style="margin-bottom:12px;background:#fef3c7;border-color:#fde68a;color:#92400e"><i class="bi bi-pencil-square"></i><span><strong>${needsPrice.length} item(s) need a selling price</strong> — click Edit or Refill to set it</span></div>` : '';
   const rows = items.map(i => {
     const margin  = i.sell>0 ? ((i.sell-i.cost)/i.sell*100).toFixed(0) : 0;
-    const low     = i.qty <= i.alert;
+    const low     = isLowOnStock(i);
+    const alertDisabled = !isLowStockAlertEnabled(i);
     const noSell  = i.sell <= 0;
     const expDays = daysUntilExpiry(i.expiry);
     const expLabel = i.expiry
@@ -2526,12 +2614,12 @@ function renderInventoryTable() {
     const sup = state.suppliers.find(s=>s.id===i.supplierId);
     const supLabel = sup ? sup.name : '<span style="color:var(--muted)">—</span>';
     const stockId  = i.stockId || '—';
-    return {i,margin,low,noSell,expLabel,expDays,supLabel,stockId};
+    return {i,margin,low,noSell,expLabel,expDays,supLabel,stockId,alertDisabled};
   });
 
   const desktopHTML = `<div class="gs-table-wrap desktop-table"><table class="gs-table">
     <thead><tr><th>Stock ID</th><th>Item</th><th>Category</th><th>Stock</th><th>Supplier</th><th>Cost ₹</th><th>Sell ₹</th><th>MRP ₹</th><th>Margin</th><th>Alert</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead><tbody>`
-    + rows.map(({i,margin,low,noSell,expLabel,expDays,supLabel,stockId})=>`<tr style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
+    + rows.map(({i,margin,low,noSell,expLabel,expDays,supLabel,stockId,alertDisabled})=>`<tr style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
         <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap">${stockId}</td>
         <td style="font-weight:600">${i.name}${noSell?'<span style="margin-left:6px;font-size:11px;color:#d97706">⚠</span>':''}</td>
         <td><span class="badge-gs badge-info">${i.cat}</span></td>
@@ -2541,9 +2629,9 @@ function renderInventoryTable() {
         <td style="font-family:'DM Mono',monospace;color:${noSell?'var(--amber)':'inherit'}">${noSell?'—':fmt(i.sell)}</td>
         <td style="font-family:'DM Mono',monospace;color:var(--muted)">${i.mrp?fmt(i.mrp):'—'}</td>
         <td style="color:${margin>20?'var(--green)':'var(--amber)'};font-weight:600">${margin}%</td>
-        <td style="color:var(--muted);font-size:12px">${i.alert} ${i.unit}</td>
+        <td style="color:var(--muted);font-size:12px" title="${alertDisabled?'Low-stock alert disabled for this item':'Alerts when qty ≤ '+i.alert}">${alertDisabled?'<span style="color:var(--muted);font-style:italic">off</span>':i.alert+' '+i.unit}</td>
         <td>${expLabel}</td>
-        <td><span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span></td>
+        <td><span class="badge-gs ${low?'badge-low':alertDisabled?'badge-info':'badge-ok'}" title="${alertDisabled?'No alert configured':''}">${low?'⚠ Low':alertDisabled?'—':'✓ OK'}</span></td>
         <td>
           <div style="display:flex;gap:5px;flex-wrap:nowrap;align-items:center">
             <button class="btn-gs btn-sm-gs" style="background:#dcfce7;color:#16a34a;white-space:nowrap" onclick="openRefillModal(${i.id})"><i class="bi bi-arrow-repeat"></i> Refill</button>
@@ -2552,14 +2640,14 @@ function renderInventoryTable() {
           </div>
         </td></tr>`).join('')+'</tbody></table></div>';
 
-  const mobileHTML = '<div class="mobile-list">'+rows.map(({i,margin,low,noSell,expLabel,expDays,supLabel,stockId})=>`
+  const mobileHTML = '<div class="mobile-list">'+rows.map(({i,margin,low,noSell,expLabel,expDays,supLabel,stockId,alertDisabled})=>`
     <div class="mc" style="${noSell?'background:#fffbeb':expDays!==null&&expDays<0?'background:#fef2f2':expDays!==null&&expDays<=7?'background:#fffbeb':''}">
       <div class="mc-top">
         <div>
           <span class="mc-name">${i.name}${noSell?'<span style="font-size:10px;color:var(--amber);margin-left:5px">⚠</span>':''}</span>
           <div style="font-size:10px;font-family:'DM Mono',monospace;color:var(--muted);margin-top:2px">${stockId}</div>
         </div>
-        <span class="badge-gs ${low?'badge-low':'badge-ok'}">${low?'⚠ Low':'✓ OK'}</span>
+        <span class="badge-gs ${low?'badge-low':alertDisabled?'badge-info':'badge-ok'}" title="${alertDisabled?'Low-stock alert disabled':''}">${low?'⚠ Low':alertDisabled?'— Alert off':'✓ OK'}</span>
       </div>
       <div class="mc-meta">
         <span><strong>${i.qty} ${i.unit}</strong></span>
@@ -5024,28 +5112,48 @@ function getCustomerStats(customerId) {
   const txns = (state.transactions||[]).filter(t=>t.customerId===customerId)
                                        .slice()
                                        .sort((a,b)=>(a.createdAt||a.date||'').localeCompare(b.createdAt||b.date||''));
-  let totalPurchases = 0, totalPaid = 0, totalDue = 0, loanCount = 0;
+  let totalPurchases = 0, totalPaid = 0, txnDue = 0, loanCount = 0;
   txns.forEach(t => {
     totalPurchases += (t.totalRevenue || 0);
     totalPaid      += (t.paidAmount  || 0);
-    totalDue       += (t.dueAmount   || 0);
+    txnDue         += (t.dueAmount   || 0);
     if ((t.dueAmount || 0) > 0 || t.paymentStatus === 'loan' || t.paymentStatus === 'partial') loanCount++;
   });
+  // Manual balance adjustments. Each carries an `amountDelta` (signed):
+  //   +ve → adds to due (add_due, previous_balance)
+  //   -ve → reduces due (reduce_due, manual_settlement, discount_waiver)
+  // `correction` may be either direction based on user choice.
+  const adjustments = Array.isArray(cust.adjustments) ? cust.adjustments : [];
+  let adjTotal = 0, adjAdded = 0, adjReduced = 0;
+  adjustments.forEach(a => {
+    const delta = Number(a.amountDelta) || 0;
+    adjTotal += delta;
+    if (delta > 0) adjAdded   += delta;
+    else           adjReduced += -delta;
+  });
+  // True outstanding balance = transaction dues + net adjustments. Floor at 0
+  // unless any single transaction is still un-cleared (we still respect that for overdue logic).
+  const totalDue = parseFloat((txnDue + adjTotal).toFixed(2));
   const lastTxn = txns.length > 0 ? txns[txns.length-1] : null;
   // Oldest unpaid txn for overdue detection
   const oldestUnpaid = txns.filter(t=>(t.dueAmount||0) > 0)
                            .sort((a,b)=>(a.date||'').localeCompare(b.date||''))[0];
   let oldestUnpaidDays = null;
-  if (oldestUnpaid) {
+  if (oldestUnpaid && totalDue > 0) {
     const d = new Date(oldestUnpaid.date);
     oldestUnpaidDays = Math.floor((Date.now() - d.getTime()) / (1000*60*60*24));
   }
   return {
     customer:     cust,
     txns,
+    adjustments,
     totalPurchases: parseFloat(totalPurchases.toFixed(2)),
     totalPaid:      parseFloat(totalPaid.toFixed(2)),
-    totalDue:       parseFloat(totalDue.toFixed(2)),
+    totalDue,                                              // includes manual adjustments
+    txnOnlyDue:     parseFloat(txnDue.toFixed(2)),         // dues from transactions only
+    adjTotal:       parseFloat(adjTotal.toFixed(2)),       // net adjustment (signed)
+    adjAdded:       parseFloat(adjAdded.toFixed(2)),       // sum of positive adjustments
+    adjReduced:     parseFloat(adjReduced.toFixed(2)),     // sum of |negative adjustments|
     txnCount:       txns.length,
     loanCount,
     lastTxnDate:    lastTxn ? lastTxn.date : null,
@@ -5378,8 +5486,10 @@ function openCustomerDetail(customerId) {
   overlay.id = 'cust-detail-overlay';
   overlay.className = 'cust-detail-modal-overlay';
 
-  // Build ledger rows. Each row is either a debit (sale) or a credit (payment).
-  // Sort all events chronologically and compute running balance.
+  // Build ledger rows. Each row is either a debit (sale / add-due adjustment) or
+  // a credit (payment / reduce-due adjustment). Sort chronologically and compute
+  // a running balance. Adjustments carry their own pill so users can distinguish
+  // them from real sales/payments at a glance.
   const events = [];
   stats.txns.forEach(t => {
     events.push({
@@ -5417,6 +5527,22 @@ function openCustomerDetail(customerId) {
       standalone: true
     });
   });
+  // Manual balance adjustments
+  (c.adjustments||[]).forEach(a => {
+    const delta = Number(a.amountDelta) || 0;
+    const isAdd = delta > 0;
+    events.push({
+      type:        'adjustment',
+      direction:   isAdd ? 'add' : 'reduce',
+      adjType:     a.adjustmentType,
+      date:        a.date || (a.createdAt || '').slice(0,10),
+      label:       _adjustmentTypeLabel(a.adjustmentType) + (a.notes ? ' — ' + a.notes : ''),
+      detail:      `Manual ${isAdd?'addition':'reduction'} · was ${fmt(a.previousBalance||0)} → ${fmt(a.newBalance||0)}`,
+      debit:       isAdd  ? Math.abs(delta) : 0,
+      credit:      !isAdd ? Math.abs(delta) : 0,
+      adjustmentId: a.id
+    });
+  });
   // Sort by date, then by sale-before-payment within the same date
   events.sort((a,b)=>{
     const d = (a.date||'').localeCompare(b.date||'');
@@ -5426,10 +5552,19 @@ function openCustomerDetail(customerId) {
   let running = 0;
   const ledgerRows = events.map(e => {
     running += e.debit - e.credit;
-    return `<div class="ledger-row ${e.type==='payment'?'payment':''}">
+    const rowCls = e.type === 'payment' ? 'payment'
+                 : e.type === 'adjustment' ? `adjustment ${e.direction==='reduce'?'reduce':''}`
+                 : '';
+    let pill = '';
+    if (e.type === 'adjustment') {
+      const pillClsMap = { add_due:'adj-pill-add', reduce_due:'adj-pill-reduce', correction:'adj-pill-correct', previous_balance:'adj-pill-prev', manual_settlement:'adj-pill-settle', discount_waiver:'adj-pill-waiver' };
+      const pillCls = pillClsMap[e.adjType] || 'adj-pill-correct';
+      pill = `<span class="adj-event-pill ${pillCls}">${_adjustmentTypeLabel(e.adjType)}</span>`;
+    }
+    return `<div class="ledger-row ${rowCls}">
       <div class="lr-cell" data-lbl="Date">${e.date||'—'}</div>
       <div class="lr-cell" data-lbl="Description">
-        <strong>${e.label}</strong>
+        <strong>${pill}${e.label}</strong>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${e.detail||''}</div>
       </div>
       <div class="lr-cell lr-amt debit" data-lbl="Bill">${e.debit>0?fmt(e.debit):'—'}</div>
@@ -5461,6 +5596,7 @@ function openCustomerDetail(customerId) {
           <div style="background:#dcfce7;padding:10px;border-radius:8px"><div style="font-size:10px;color:#15803d;text-transform:uppercase;font-weight:600">Total Paid</div><div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:#15803d">${fmt(stats.totalPaid)}</div></div>
           <div style="background:${stats.totalDue>0?'#fef3c7':'#dcfce7'};padding:10px;border-radius:8px"><div style="font-size:10px;color:${stats.totalDue>0?'#92400e':'#15803d'};text-transform:uppercase;font-weight:600">Pending Balance</div><div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:${stats.totalDue>0?'#92400e':'#15803d'}">${fmt(stats.totalDue)}</div></div>
           <div style="background:#f1f5f9;padding:10px;border-radius:8px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:600">Transactions</div><div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700">${stats.txnCount}</div></div>
+          ${(stats.adjAdded > 0 || stats.adjReduced > 0) ? `<div style="background:#eff6ff;padding:10px;border-radius:8px;grid-column:span 2" title="Net of all manual adjustments. +adds to due, -reduces due."><div style="font-size:10px;color:var(--blue);text-transform:uppercase;font-weight:600">Manual Adjustments</div><div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--blue);margin-top:2px">+${fmt(stats.adjAdded)} added · −${fmt(stats.adjReduced)} reduced · net ${stats.adjTotal>=0?'+':''}${fmt(stats.adjTotal)}</div></div>` : ''}
         </div>
         ${stats.isOverdue?`<div class="alert-due-card overdue" style="margin-bottom:14px"><i class="bi bi-exclamation-octagon-fill ico"></i><div><strong>Overdue ${stats.oldestUnpaidDays} days</strong> — oldest unpaid bill</div></div>`:''}
         <h6 style="font-size:13px;font-weight:600;margin:8px 0;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)"><i class="bi bi-journal-text"></i> Ledger / Khata History</h6>
@@ -5475,6 +5611,7 @@ function openCustomerDetail(customerId) {
       </div>
       <div class="cust-detail-footer">
         ${stats.totalDue > 0 ? `<button class="btn-gs" style="background:#16a34a;color:#fff;flex:1" onclick="openRepaymentModal(${c.id})"><i class="bi bi-cash-coin"></i> Record Payment</button>` : ''}
+        <button class="btn-gs btn-outline-gs" onclick="openAdjustmentModal(${c.id})" title="Manually add or reduce pending balance"><i class="bi bi-sliders"></i> Adjust</button>
         <button class="btn-gs btn-outline-gs" onclick="openEditCustomerModal(${c.id})"><i class="bi bi-pencil"></i> Edit</button>
         ${c.phone?`<a class="btn-gs btn-outline-gs" href="tel:${c.phone}"><i class="bi bi-telephone-fill"></i></a>`:''}
         ${c.phone?`<a class="btn-gs btn-outline-gs" style="color:#25D366;border-color:#25D366" href="https://wa.me/${(c.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent('Reminder: You have a pending balance of '+fmt(stats.totalDue)+' at our shop.')}" target="_blank"><i class="bi bi-whatsapp"></i></a>`:''}
@@ -5710,6 +5847,231 @@ function deleteCustomer(customerId) {
   save();
   document.getElementById('cust-detail-overlay')?.remove();
   toast(`Deleted customer: ${c.name}`);
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  MANUAL CUSTOMER BALANCE ADJUSTMENTS
+// ═══════════════════════════════════════════════════════════════════
+//  Adjustments are immutable ledger events stored on the customer:
+//    customer.adjustments[] = [{
+//      id,                  // unique
+//      adjustmentType,      // one of ADJUSTMENT_TYPES.id
+//      amountDelta,         // signed: +ve = adds to due, -ve = reduces due
+//      amount,              // absolute value (for display)
+//      previousBalance,     // total due before this event (audit)
+//      newBalance,          // total due after this event   (audit)
+//      notes,
+//      date,                // user-chosen YYYY-MM-DD
+//      createdAt            // immutable record-creation timestamp
+//    }]
+//
+//  KEY INVARIANTS:
+//   1. Sales transactions are NEVER modified by adjustments. Original
+//      paidAmount/dueAmount/totalRevenue stay intact for historical
+//      accuracy and audit.
+//   2. Customer's effective balance = sum(txn.dueAmount) + sum(adj.amountDelta).
+//   3. Final balance cannot go below zero unless the user explicitly
+//      confirms an overpayment-style negative balance (treated as advance).
+// ═══════════════════════════════════════════════════════════════════
+const ADJUSTMENT_TYPES = [
+  { id:'add_due',           label:'Add Due',           direction:'add',    icon:'bi-plus-circle-fill',  desc:'Increase pending balance' },
+  { id:'reduce_due',        label:'Reduce Due',        direction:'reduce', icon:'bi-dash-circle-fill',  desc:'Decrease pending balance' },
+  { id:'previous_balance',  label:'Previous Balance',  direction:'add',    icon:'bi-clock-history',     desc:'Old balance from before app' },
+  { id:'correction',        label:'Correction',        direction:'dual',   icon:'bi-pencil-square',     desc:'Fix a bookkeeping mistake' },
+  { id:'manual_settlement', label:'Manual Settlement', direction:'reduce', icon:'bi-handshake',         desc:'Settled outside the system' },
+  { id:'discount_waiver',   label:'Discount / Waiver', direction:'reduce', icon:'bi-gift-fill',         desc:'Forgive part or all of dues' }
+];
+
+function _adjustmentTypeLabel(typeId) {
+  const t = ADJUSTMENT_TYPES.find(x => x.id === typeId);
+  return t ? t.label : 'Adjustment';
+}
+function _adjustmentTypeMeta(typeId) {
+  return ADJUSTMENT_TYPES.find(x => x.id === typeId) || ADJUSTMENT_TYPES[0];
+}
+function _generateAdjustmentId() {
+  return 'ADJ-' + Date.now().toString(36) + '-' + Math.floor(Math.random()*1000).toString(36);
+}
+
+// In-modal state: selected type id + selected direction (only matters for 'correction')
+let _adjModalType = 'add_due';
+let _adjModalCorrectionDirection = 'add';   // used only when type === 'correction'
+
+function openAdjustmentModal(customerId) {
+  const stats = getCustomerStats(customerId);
+  if (!stats) { toast('Customer not found','error'); return; }
+  const old = document.getElementById('adj-overlay'); if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'adj-overlay';
+  overlay.className = 'repay-modal-overlay';
+  const today = new Date().toISOString().slice(0,10);
+
+  // Reset modal state to a sensible default
+  _adjModalType = stats.totalDue > 0 ? 'reduce_due' : 'add_due';
+  _adjModalCorrectionDirection = 'add';
+
+  overlay.innerHTML = `
+    <div class="repay-modal" style="max-width:540px">
+      <div class="repay-modal-head" style="background:linear-gradient(135deg,#2563eb,#3b82f6)">
+        <h3><i class="bi bi-sliders"></i> Adjust Balance</h3>
+        <div style="font-size:12px;opacity:.9">${stats.customer.name}</div>
+        <div class="due-amt">Current: ${fmt(stats.totalDue)}</div>
+      </div>
+      <div class="repay-modal-body">
+        <label class="form-label">Adjustment Type</label>
+        <div id="adj-type-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+
+        <div id="adj-correction-dir" style="display:none;margin-top:10px;padding:8px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px">
+          <div style="font-size:11px;font-weight:600;margin-bottom:6px">Correction direction:</div>
+          <div style="display:flex;gap:6px">
+            <label style="flex:1;display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff" id="adj-cdir-add-wrap">
+              <input type="radio" name="adj-cdir" value="add" checked onchange="_setAdjCorrectionDir('add')"> <span>Add to due</span>
+            </label>
+            <label style="flex:1;display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:#fff" id="adj-cdir-reduce-wrap">
+              <input type="radio" name="adj-cdir" value="reduce" onchange="_setAdjCorrectionDir('reduce')"> <span>Reduce from due</span>
+            </label>
+          </div>
+        </div>
+
+        <label class="form-label" style="margin-top:14px">Amount <span style="color:var(--red)">*</span></label>
+        <input type="number" id="adj-amount" class="form-control" placeholder="0.00" step="0.01" min="0.01" inputmode="decimal" oninput="_renderAdjPreview(${customerId})">
+
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr;gap:8px">
+          <div>
+            <label class="form-label">Date</label>
+            <input type="date" id="adj-date" class="form-control" value="${today}">
+          </div>
+          <div>
+            <label class="form-label">Notes / Reason <span style="color:var(--muted);font-weight:400">(recommended)</span></label>
+            <input type="text" id="adj-notes" class="form-control" placeholder="e.g. Diwali discount, old balance from notebook">
+          </div>
+        </div>
+
+        <div id="adj-preview" class="adj-preview-box" style="display:none"></div>
+
+        <div style="margin-top:10px;padding:8px 10px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:11px;color:#15803d">
+          <i class="bi bi-shield-check"></i> Adjustments are recorded permanently in the ledger and never modify original sales/payment records.
+        </div>
+      </div>
+      <div class="repay-modal-footer">
+        <button class="btn-gs btn-outline-gs" style="flex:1" onclick="document.getElementById('adj-overlay').remove()">Cancel</button>
+        <button class="btn-gs btn-primary-gs" style="flex:2" onclick="confirmAdjustment(${customerId})"><i class="bi bi-check2-circle"></i> Apply Adjustment</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  _renderAdjTypeGrid();
+  setTimeout(()=>document.getElementById('adj-amount')?.focus(), 80);
+}
+
+function _renderAdjTypeGrid() {
+  const grid = document.getElementById('adj-type-grid'); if (!grid) return;
+  grid.innerHTML = ADJUSTMENT_TYPES.map(t => {
+    const dirLbl = t.direction === 'add' ? '+ Adds to due'
+                 : t.direction === 'reduce' ? '− Reduces due'
+                 : '± Either way';
+    return `<button type="button" class="adj-type-card ${t.id===_adjModalType?'selected':''}" onclick="_selectAdjType('${t.id}')">
+      <div class="at-name"><i class="bi ${t.icon}"></i> ${t.label}</div>
+      <div class="at-direction ${t.direction}">${dirLbl}</div>
+      <div class="at-desc">${t.desc}</div>
+    </button>`;
+  }).join('');
+}
+
+function _selectAdjType(typeId) {
+  _adjModalType = typeId;
+  _renderAdjTypeGrid();
+  const corrBox = document.getElementById('adj-correction-dir');
+  if (corrBox) corrBox.style.display = (typeId === 'correction') ? 'block' : 'none';
+  // Re-render preview if amount filled
+  const customerId = parseInt(document.querySelector('#adj-overlay button[onclick^="confirmAdjustment"]')?.getAttribute('onclick')?.match(/\d+/)?.[0] || 0);
+  if (customerId) _renderAdjPreview(customerId);
+}
+
+function _setAdjCorrectionDir(dir) {
+  _adjModalCorrectionDirection = dir;
+  const customerId = parseInt(document.querySelector('#adj-overlay button[onclick^="confirmAdjustment"]')?.getAttribute('onclick')?.match(/\d+/)?.[0] || 0);
+  if (customerId) _renderAdjPreview(customerId);
+}
+
+// Resolve the signed delta from current modal state + amount
+function _resolveAdjDelta(amount) {
+  const meta = _adjustmentTypeMeta(_adjModalType);
+  let sign = 0;
+  if (meta.direction === 'add')         sign = +1;
+  else if (meta.direction === 'reduce') sign = -1;
+  else                                  sign = (_adjModalCorrectionDirection === 'reduce') ? -1 : +1;
+  return sign * Math.abs(amount);
+}
+
+function _renderAdjPreview(customerId) {
+  const box = document.getElementById('adj-preview'); if (!box) return;
+  const amt = parseFloat(document.getElementById('adj-amount').value);
+  if (!amt || isNaN(amt) || amt <= 0) { box.style.display = 'none'; return; }
+  const stats = getCustomerStats(customerId); if (!stats) return;
+  const delta = _resolveAdjDelta(amt);
+  const newBal = parseFloat((stats.totalDue + delta).toFixed(2));
+  const goesNeg = newBal < -0.005;
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="row-pl"><span style="color:var(--muted)">Current balance:</span><span style="font-family:'DM Mono',monospace">${fmt(stats.totalDue)}</span></div>
+    <div class="row-pl"><span style="color:var(--muted)">This adjustment:</span><span style="font-family:'DM Mono',monospace;color:${delta>=0?'var(--red)':'var(--green)'}">${delta>=0?'+':'−'}${fmt(Math.abs(delta))}</span></div>
+    <div class="row-pl" style="border-top:1px dashed var(--border);margin-top:6px;padding-top:6px"><span style="font-weight:600">New balance:</span><span class="new-bal" style="color:${goesNeg?'#7c3aed':(newBal>0?'var(--amber)':'var(--green)')}">${fmt(newBal)}${goesNeg?' (advance)':''}</span></div>
+    ${goesNeg ? '<div style="font-size:11px;color:#7c3aed;margin-top:6px"><i class="bi bi-info-circle-fill"></i> Final balance is negative — will be treated as a customer advance (overpayment).</div>' : ''}
+  `;
+}
+
+// In-flight guard against double-tap submits
+let _adjInFlight = false;
+
+function confirmAdjustment(customerId) {
+  if (_adjInFlight) return;
+  const cust = state.customers.find(c => c.id === customerId);
+  if (!cust) { toast('Customer not found','error'); return; }
+  const amtRaw = document.getElementById('adj-amount').value;
+  const amt    = parseFloat(amtRaw);
+  if (!amt || isNaN(amt) || amt <= 0) { toast('Enter a valid amount','error'); document.getElementById('adj-amount').focus(); return; }
+  const date   = document.getElementById('adj-date').value || new Date().toISOString().slice(0,10);
+  const notes  = document.getElementById('adj-notes').value.trim();
+  const delta  = _resolveAdjDelta(amt);
+  const stats  = getCustomerStats(customerId);
+  const previousBalance = stats.totalDue;
+  const newBalance      = parseFloat((previousBalance + delta).toFixed(2));
+
+  // Confirm if going negative (advance / overpayment)
+  if (newBalance < -0.005) {
+    if (!confirm(`This will reduce ${cust.name}'s balance to ${fmt(newBalance)} (negative — i.e. you owe them ${fmt(Math.abs(newBalance))}).\n\nProceed and record as customer advance?`)) return;
+  }
+
+  // Extra friction for waivers/discounts (financial impact)
+  const meta = _adjustmentTypeMeta(_adjModalType);
+  if (meta.id === 'discount_waiver' && delta < 0) {
+    if (!confirm(`Waive ${fmt(Math.abs(delta))} of ${cust.name}'s dues?\n\nThis amount will be permanently removed from receivables and recorded in the ledger as a discount/waiver.`)) return;
+  }
+
+  _adjInFlight = true;
+  if (!Array.isArray(cust.adjustments)) cust.adjustments = [];
+  cust.adjustments.push({
+    id:               _generateAdjustmentId(),
+    adjustmentType:   _adjModalType,
+    amountDelta:      parseFloat(delta.toFixed(2)),
+    amount:           parseFloat(Math.abs(delta).toFixed(2)),
+    previousBalance:  parseFloat(previousBalance.toFixed(2)),
+    newBalance:       newBalance,
+    notes:            notes,
+    date:             date,
+    createdAt:        new Date().toISOString()
+  });
+
+  save();
+  _adjInFlight = false;
+  document.getElementById('adj-overlay')?.remove();
+  const dirMsg = delta >= 0 ? `Added ${fmt(Math.abs(delta))} to` : `Reduced ${fmt(Math.abs(delta))} from`;
+  toast(`${dirMsg} ${cust.name}'s balance`);
+  // Re-open the detail modal so user sees the new ledger row immediately
+  const detail = document.getElementById('cust-detail-overlay');
+  if (detail) { detail.remove(); openCustomerDetail(customerId); }
   renderAll();
 }
 
