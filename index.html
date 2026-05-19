@@ -75,6 +75,69 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 .badge-danger{background:var(--red-lt);color:var(--red)}
 .badge-info{background:var(--blue-lt);color:var(--blue)}
 .alert-low-gs{background:var(--amber-lt);border:1px solid #fde68a;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:500;color:var(--amber);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+
+/* ───────── LOW-STOCK SUPPLIER-AWARE CARDS ───────── */
+.ls-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:11px}
+.ls-toolbar .ls-count{color:var(--muted);font-weight:500}
+.ls-toolbar .ls-count strong{color:var(--ink);font-weight:700}
+.ls-mode-switch{margin-left:auto;display:inline-flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2px;gap:0}
+.ls-mode-btn{background:none;border:none;padding:5px 10px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;border-radius:6px;-webkit-tap-highlight-color:transparent;transition:.12s ease;white-space:nowrap}
+.ls-mode-btn.active{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(15,23,42,.08)}
+.ls-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;border-left:4px solid var(--amber);position:relative}
+.ls-card.critical{border-left-color:var(--red);background:#fffafa}
+.ls-card.out{border-left-color:#991b1b;background:#fef2f2}
+.ls-card-top{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.ls-card-name{font-size:13px;font-weight:600;color:var(--ink);line-height:1.25;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ls-urgency-pill{font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.ls-pill-out{background:#7f1d1d;color:#fff}
+.ls-pill-crit{background:#dc2626;color:#fff}
+.ls-pill-low{background:#d97706;color:#fff}
+.ls-qty-block{margin-left:auto;text-align:right;flex-shrink:0;font-size:11px;color:var(--muted);line-height:1.3}
+.ls-qty-block .qty-val{font-family:'DM Mono',monospace;font-weight:700;font-size:14px;display:block}
+.ls-qty-block .qty-val.crit{color:var(--red)}
+.ls-qty-block .qty-val.low{color:var(--amber)}
+.ls-supplier-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)}
+.ls-supplier-row .sup-label{font-size:9px;text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.ls-supplier-row .sup-name{color:var(--ink);font-weight:600;font-size:12px}
+.ls-supplier-row .sup-name.unassigned{color:var(--muted);font-style:italic;font-weight:500}
+.ls-supplier-row .sup-phone{font-family:'DM Mono',monospace}
+.ls-actions{display:flex;gap:5px;margin-left:auto;flex-wrap:wrap}
+.ls-action-btn{padding:4px 9px;font-size:11px;font-weight:600;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-decoration:none;-webkit-tap-highlight-color:transparent;line-height:1;transition:.12s ease;white-space:nowrap;min-height:28px}
+.ls-action-btn:hover{background:var(--surface)}
+.ls-action-btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.ls-action-btn.primary:hover{background:#15803d}
+.ls-action-btn.outline-blue{color:var(--blue);border-color:#bfdbfe}
+.ls-action-btn.outline-blue:hover{background:#eff6ff}
+.ls-action-btn.wa{color:#15803d;border-color:#86efac}
+.ls-action-btn.wa:hover{background:#dcfce7}
+.ls-action-btn.call{color:var(--blue);border-color:#bfdbfe}
+/* Supplier-grouped view */
+.ls-supgroup{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.ls-supgroup-head{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;background:linear-gradient(180deg,#f8fafc,#fff)}
+.ls-supgroup-head:hover{background:#f1f5f9}
+.ls-supgroup-head .ico{width:30px;height:30px;border-radius:8px;background:#dbeafe;color:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.ls-supgroup-head .sg-name{font-size:13px;font-weight:700;color:var(--ink)}
+.ls-supgroup-head .sg-meta{font-size:11px;color:var(--muted);margin-top:1px;display:flex;flex-wrap:wrap;gap:4px 10px}
+.ls-supgroup-head .sg-count{margin-left:auto;display:inline-flex;align-items:center;gap:4px;background:var(--amber);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;flex-shrink:0}
+.ls-supgroup-head .sg-count.has-crit{background:var(--red)}
+.ls-supgroup-head .chev{font-size:14px;color:var(--muted);flex-shrink:0;transition:transform .15s ease}
+.ls-supgroup-head.expanded .chev{transform:rotate(180deg)}
+.ls-supgroup-body{padding:6px 12px 10px;border-top:1px solid var(--border);display:none}
+.ls-supgroup.expanded .ls-supgroup-body{display:block}
+.ls-supgroup-body .ls-card{border:none;border-left:3px solid var(--amber);border-radius:6px;background:#fffdf7;padding:8px 10px;margin-bottom:6px}
+.ls-supgroup-body .ls-card.critical{background:#fff5f5;border-left-color:var(--red)}
+.ls-supgroup-body .ls-card.out{background:#fef2f2;border-left-color:#991b1b}
+.ls-supgroup-actions{padding:0 12px 10px;display:flex;gap:6px;flex-wrap:wrap}
+.ls-unassigned-box{background:#f8fafc;border:1px dashed var(--border);border-radius:10px;padding:10px 12px;margin-top:8px}
+.ls-unassigned-box .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+@media (max-width:640px){
+  .ls-card-top{flex-wrap:wrap}
+  .ls-qty-block{margin-left:0;text-align:left;width:100%;display:flex;align-items:center;gap:8px;font-size:11px}
+  .ls-qty-block .qty-val{display:inline;font-size:13px}
+  .ls-supplier-row{flex-direction:column;align-items:flex-start;gap:6px}
+  .ls-actions{margin-left:0;width:100%;justify-content:flex-start}
+  .ls-action-btn{flex:1;justify-content:center;min-width:0}
+}
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
 .empty-state i{font-size:40px;display:block;margin-bottom:10px;opacity:.3}
 .pnl-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
@@ -2015,10 +2078,7 @@ function renderDashboard() {
     <div class="pnl-row total"><span>Gross Profit</span><span style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</span></div>
     <div class="pnl-row"><span style="color:var(--muted)">Profit Margin</span><span>${margin}%</span></div>`;
 
-  const lowItems = state.inventory.filter(i=>i.qty<=i.alert);
-  document.getElementById('dash-lowstock').innerHTML = lowItems.length===0
-    ? '<p style="color:var(--muted);font-size:13px"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> All items well stocked</p>'
-    : lowItems.map(i=>`<div class="alert-low-gs"><i class="bi bi-exclamation-triangle-fill"></i><strong>${i.name}</strong> — only ${i.qty} ${i.unit} left</div>`).join('');
+  renderLowStockAlerts();
 
   // Feature 3: Expiry alerts
   renderExpiryAlerts();
@@ -2068,6 +2128,304 @@ function renderDashboard() {
           <div class="mc-top"><span class="mc-name" style="font-family:monospace;color:var(--blue)">${t.txnId}</span><span style="color:var(--green);font-family:monospace;font-weight:600">${fmt(t.totalRevenue)}</span></div>
           <div class="mc-meta"><span>${t.itemCount} item${t.itemCount!==1?'s':''}</span><span style="color:${t.totalProfit>=0?'var(--green)':'var(--red)'}">Profit: ${fmt(t.totalProfit)}</span><span>${t.date}</span></div>
         </div>`).join('')+'</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  LOW-STOCK ALERTS (Dashboard) — supplier-aware
+// ═══════════════════════════════════════════════════════════════════
+//  Shows low/critical/out-of-stock items grouped by item OR supplier,
+//  with quick-action buttons for Refill, Request, Call, WhatsApp.
+//
+//  ▸ Urgency tiers:
+//      out      — qty == 0
+//      critical — qty <= alert/2  (or qty <= 1 when alert == 0)
+//      low      — qty <= alert    (the existing threshold)
+//
+//  ▸ Supplier mapping (single source of truth: _resolveItemSupplier):
+//      1. item.supplierId         (current linked supplier)
+//      2. latest refillHistory[].supplierId
+//      3. most frequent refillHistory[].supplierId
+//      4. null  → "No Supplier Assigned"
+//
+//  ▸ View modes ('item' | 'supplier'):
+//      Persisted in localStorage under LS_VIEWMODE_KEY.
+//      Supplier-group expand/collapse is in-memory per session.
+// ═══════════════════════════════════════════════════════════════════
+const LS_VIEWMODE_KEY = 'gsm_lowstock_viewmode';
+let _lsExpandedSuppliers = new Set();   // session-only; supplier IDs expanded
+
+// Returns { supplierId, source } where source is 'linked' | 'latest' | 'frequent' | null
+function _resolveItemSupplier(item) {
+  if (item.supplierId && state.suppliers.find(s => s.id === item.supplierId)) {
+    return { supplierId: item.supplierId, source: 'linked' };
+  }
+  const history = Array.isArray(item.refillHistory) ? item.refillHistory : [];
+  const latest = history.slice().reverse().find(r => r.supplierId && state.suppliers.find(s => s.id === r.supplierId));
+  if (latest) return { supplierId: latest.supplierId, source: 'latest' };
+  if (history.length > 0) {
+    const counts = {};
+    history.forEach(r => {
+      if (!r.supplierId) return;
+      if (!state.suppliers.find(s => s.id === r.supplierId)) return;
+      counts[r.supplierId] = (counts[r.supplierId] || 0) + 1;
+    });
+    const ranked = Object.entries(counts).sort((a,b) => b[1] - a[1])[0];
+    if (ranked) return { supplierId: parseInt(ranked[0]), source: 'frequent' };
+  }
+  return { supplierId: null, source: null };
+}
+
+// Classify urgency. Returns 'out' | 'critical' | 'low'.
+function _lowStockUrgency(item) {
+  if (item.qty <= 0)                                  return 'out';
+  const alert = item.alert || 0;
+  if (alert === 0 && item.qty <= 1)                   return 'critical';
+  if (alert > 0  && item.qty <= alert / 2)            return 'critical';
+  return 'low';
+}
+
+// Render a single low-stock card.
+function _renderLowStockCard(item, supplier, supplierSource, options) {
+  options = options || {};
+  const urgency  = _lowStockUrgency(item);
+  const cardCls  = urgency === 'out' ? 'out' : (urgency === 'critical' ? 'critical' : '');
+  const qtyCls   = urgency === 'low' ? 'low' : 'crit';
+  const pillCls  = urgency === 'out' ? 'ls-pill-out' : (urgency === 'critical' ? 'ls-pill-crit' : 'ls-pill-low');
+  const pillTxt  = urgency === 'out' ? 'Out of Stock' : (urgency === 'critical' ? 'Critical' : 'Low');
+  let supBlock = '';
+  if (!options.hideSupplier) {
+    if (supplier) {
+      const phoneClean = (supplier.phone || '').replace(/\D/g, '');
+      const sourceTag = supplierSource && supplierSource !== 'linked'
+        ? `<span title="From refill history" style="font-size:9px;background:#e0e7ff;color:#4338ca;padding:1px 5px;border-radius:4px;font-weight:600">~ ${supplierSource === 'latest' ? 'last refill' : 'usual'}</span>`
+        : '';
+      supBlock = `<div class="ls-supplier-row">
+        <span class="sup-label" style="color:var(--blue)"><i class="bi bi-truck-front-fill"></i> Restock from:</span>
+        <span class="sup-name">${supplier.name}</span>
+        ${supplier.phone ? `<span class="sup-phone">· ${supplier.phone}</span>` : ''}
+        ${sourceTag}
+        <div class="ls-actions">
+          <button class="ls-action-btn primary" onclick="event.stopPropagation();openRefillModal(${item.id})" title="Add stock now"><i class="bi bi-arrow-repeat"></i> Refill</button>
+          <button class="ls-action-btn outline-blue" onclick="event.stopPropagation();quickRequestFromLowStock(${item.id})" title="Create supplier request"><i class="bi bi-clipboard-plus"></i> Request</button>
+          ${supplier.phone ? `<a class="ls-action-btn call" href="tel:${supplier.phone}" onclick="event.stopPropagation()" title="Call supplier"><i class="bi bi-telephone-fill"></i></a>` : ''}
+          ${phoneClean ? `<a class="ls-action-btn wa" href="https://wa.me/${phoneClean}?text=${encodeURIComponent('Hi ' + supplier.name + ', we need to restock: ' + item.name + ' (current stock: ' + item.qty + ' ' + item.unit + '). Please share latest rate and availability. Thank you.')}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="WhatsApp supplier"><i class="bi bi-whatsapp"></i></a>` : ''}
+        </div>
+      </div>`;
+    } else {
+      supBlock = `<div class="ls-supplier-row">
+        <span class="sup-label" style="color:var(--muted)"><i class="bi bi-question-circle"></i> Supplier:</span>
+        <span class="sup-name unassigned">No Supplier Assigned</span>
+        <div class="ls-actions">
+          <button class="ls-action-btn primary" onclick="event.stopPropagation();openRefillModal(${item.id})"><i class="bi bi-arrow-repeat"></i> Refill</button>
+          <button class="ls-action-btn outline-blue" onclick="event.stopPropagation();quickRequestFromLowStock(${item.id})"><i class="bi bi-clipboard-plus"></i> Request</button>
+        </div>
+      </div>`;
+    }
+  }
+  return `<div class="ls-card ${cardCls}">
+    <div class="ls-card-top">
+      <div class="ls-card-name">
+        <span class="ls-urgency-pill ${pillCls}">${pillTxt}</span>
+        ${item.name}
+        ${item.stockId ? `<span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);font-weight:500">${item.stockId}</span>` : ''}
+      </div>
+      <div class="ls-qty-block">
+        <span class="qty-val ${qtyCls}">${item.qty} ${item.unit}</span>
+        <span>of ${item.alert || 0} alert</span>
+      </div>
+    </div>
+    ${supBlock}
+  </div>`;
+}
+
+// Main renderer — called from renderDashboard
+function renderLowStockAlerts() {
+  const el = document.getElementById('dash-lowstock');
+  if (!el) return;
+
+  const lowItems = state.inventory.filter(i => i.qty <= i.alert);
+  if (lowItems.length === 0) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px"><i class="bi bi-check-circle-fill" style="color:var(--green)"></i> All items well stocked</p>';
+    return;
+  }
+
+  // Resolve supplier once per render.
+  const resolved = lowItems.map(item => {
+    const r = _resolveItemSupplier(item);
+    const supplier = r.supplierId ? state.suppliers.find(s => s.id === r.supplierId) : null;
+    const urgency  = _lowStockUrgency(item);
+    return { item, supplier, supplierSource: r.source, urgency };
+  });
+
+  // Sort: out → critical → low; alphabetical within each tier
+  const urgencyRank = { out: 0, critical: 1, low: 2 };
+  resolved.sort((a, b) => {
+    const u = urgencyRank[a.urgency] - urgencyRank[b.urgency];
+    return u !== 0 ? u : a.item.name.localeCompare(b.item.name);
+  });
+
+  const counts = {
+    out:      resolved.filter(r => r.urgency === 'out').length,
+    critical: resolved.filter(r => r.urgency === 'critical').length,
+    low:      resolved.filter(r => r.urgency === 'low').length
+  };
+
+  let mode = 'item';
+  try { mode = localStorage.getItem(LS_VIEWMODE_KEY) || 'item'; } catch (e) {}
+  if (mode !== 'item' && mode !== 'supplier') mode = 'item';
+
+  const toolbar = `<div class="ls-toolbar">
+    <span class="ls-count"><strong>${resolved.length}</strong> item${resolved.length!==1?'s':''} need restocking</span>
+    ${counts.out      ? `<span class="ls-urgency-pill ls-pill-out">${counts.out} out</span>` : ''}
+    ${counts.critical ? `<span class="ls-urgency-pill ls-pill-crit">${counts.critical} critical</span>` : ''}
+    ${counts.low      ? `<span class="ls-urgency-pill ls-pill-low">${counts.low} low</span>` : ''}
+    <div class="ls-mode-switch">
+      <button class="ls-mode-btn ${mode==='item'?'active':''}" onclick="setLowStockViewMode('item')"><i class="bi bi-list-ul"></i> By Item</button>
+      <button class="ls-mode-btn ${mode==='supplier'?'active':''}" onclick="setLowStockViewMode('supplier')"><i class="bi bi-truck-front"></i> By Supplier</button>
+    </div>
+  </div>`;
+
+  let body = '';
+  if (mode === 'item') {
+    body = resolved.map(r => _renderLowStockCard(r.item, r.supplier, r.supplierSource)).join('');
+  } else {
+    const groups = new Map();
+    const unassigned = [];
+    resolved.forEach(r => {
+      if (!r.supplier) { unassigned.push(r); return; }
+      const key = r.supplier.id;
+      if (!groups.has(key)) groups.set(key, { supplier: r.supplier, items: [], hasCrit: false });
+      const g = groups.get(key);
+      g.items.push(r);
+      if (r.urgency === 'out' || r.urgency === 'critical') g.hasCrit = true;
+    });
+    const groupList = Array.from(groups.values()).sort((a, b) => {
+      if (a.hasCrit !== b.hasCrit) return a.hasCrit ? -1 : 1;
+      if (b.items.length !== a.items.length) return b.items.length - a.items.length;
+      return a.supplier.name.localeCompare(b.supplier.name);
+    });
+
+    body = groupList.map(g => {
+      if (groupList.length === 1) _lsExpandedSuppliers.add(g.supplier.id);
+      const isExpanded = _lsExpandedSuppliers.has(g.supplier.id);
+      const sup = g.supplier;
+      const phoneClean = (sup.phone || '').replace(/\D/g, '');
+      const itemNames  = g.items.map(r => r.item.name).join(', ');
+      const itemsHtml  = g.items.map(r => _renderLowStockCard(r.item, sup, r.supplierSource, { hideSupplier: true })).join('');
+      const waMsg = 'Hi ' + sup.name + ', we need to restock the following items:\n' +
+                    g.items.map(r => '\u2022 ' + r.item.name + ' (current: ' + r.item.qty + ' ' + r.item.unit + ')').join('\n') +
+                    '\n\nPlease share latest rates and availability. Thank you.';
+      return `<div class="ls-supgroup ${isExpanded?'expanded':''}" data-sup-id="${sup.id}">
+        <div class="ls-supgroup-head ${isExpanded?'expanded':''}" onclick="toggleLowStockSupplier(${sup.id})">
+          <div class="ico"><i class="bi bi-truck-front-fill"></i></div>
+          <div style="flex:1;min-width:0">
+            <div class="sg-name">${sup.name}</div>
+            <div class="sg-meta">
+              ${sup.phone ? `<span><i class="bi bi-telephone"></i> ${sup.phone}</span>` : ''}
+              ${sup.person ? `<span><i class="bi bi-person"></i> ${sup.person}</span>` : ''}
+              <span title="${itemNames.replace(/"/g,'&quot;')}">${g.items.length} item${g.items.length!==1?'s':''}: ${itemNames.length > 40 ? itemNames.slice(0,38)+'\u2026' : itemNames}</span>
+            </div>
+          </div>
+          <span class="sg-count ${g.hasCrit?'has-crit':''}">${g.items.length}</span>
+          <i class="bi bi-chevron-down chev"></i>
+        </div>
+        <div class="ls-supgroup-body">${itemsHtml}</div>
+        <div class="ls-supgroup-actions" style="${isExpanded?'':'display:none'}">
+          <button class="ls-action-btn primary" onclick="quickRequestFromSupplierGroup(${sup.id})"><i class="bi bi-clipboard-plus"></i> Create Request for All</button>
+          ${sup.phone ? `<a class="ls-action-btn call" href="tel:${sup.phone}"><i class="bi bi-telephone-fill"></i> Call</a>` : ''}
+          ${phoneClean ? `<a class="ls-action-btn wa" href="https://wa.me/${phoneClean}?text=${encodeURIComponent(waMsg)}" target="_blank" rel="noopener"><i class="bi bi-whatsapp"></i> WhatsApp</a>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    if (unassigned.length > 0) {
+      body += `<div class="ls-unassigned-box">
+        <div class="lbl"><i class="bi bi-question-circle"></i> No Supplier Assigned (${unassigned.length})</div>
+        ${unassigned.map(r => _renderLowStockCard(r.item, null, null, { hideSupplier: false })).join('')}
+      </div>`;
+    }
+  }
+
+  el.innerHTML = toolbar + body;
+}
+
+function setLowStockViewMode(mode) {
+  try { localStorage.setItem(LS_VIEWMODE_KEY, mode); } catch (e) {}
+  renderLowStockAlerts();
+}
+
+function toggleLowStockSupplier(supplierId) {
+  if (_lsExpandedSuppliers.has(supplierId)) _lsExpandedSuppliers.delete(supplierId);
+  else                                       _lsExpandedSuppliers.add(supplierId);
+  renderLowStockAlerts();
+}
+
+// Quick action: create supplier request prefilled from a single item
+function quickRequestFromLowStock(itemId) {
+  const item = state.inventory.find(i => i.id === itemId); if (!item) return;
+  const r = _resolveItemSupplier(item);
+  const suggestedQty = Math.max((item.alert || 5) * 2, 10) - item.qty;
+  const prefill = {
+    items: [{
+      name:    item.name,
+      qty:     Math.max(1, Math.ceil(suggestedQty)),
+      unit:    item.unit,
+      estCost: item.cost || 0,
+      cat:     item.cat || 'Other'
+    }],
+    supplierId:  r.supplierId || null,
+    notes:       'Auto-generated from low-stock alert (current: ' + item.qty + ' ' + item.unit + ', threshold: ' + (item.alert || 0) + ')'
+  };
+  _openRequestFromPrefill(prefill, 'Prefilled request for ' + item.name);
+}
+
+// Quick action: create supplier request prefilled with all low-stock items of one supplier
+function quickRequestFromSupplierGroup(supplierId) {
+  const sup = state.suppliers.find(s => s.id === supplierId); if (!sup) return;
+  const itemsForSup = state.inventory
+    .filter(i => i.qty <= i.alert)
+    .filter(i => {
+      const r = _resolveItemSupplier(i);
+      return r.supplierId === supplierId;
+    });
+  if (itemsForSup.length === 0) { toast('No low-stock items linked to this supplier','error'); return; }
+  const prefill = {
+    items: itemsForSup.map(item => {
+      const suggestedQty = Math.max((item.alert || 5) * 2, 10) - item.qty;
+      return {
+        name:    item.name,
+        qty:     Math.max(1, Math.ceil(suggestedQty)),
+        unit:    item.unit,
+        estCost: item.cost || 0,
+        cat:     item.cat || 'Other'
+      };
+    }),
+    supplierId: supplierId,
+    notes:      'Auto-generated from low-stock alerts (' + itemsForSup.length + ' items)'
+  };
+  _openRequestFromPrefill(prefill, 'Prefilled request: ' + itemsForSup.length + ' items for ' + sup.name);
+}
+
+// Bridge: open the New Request modal with prefilled data.
+// We don't assume the modal's internal API — we stash prefill in window._lowStockPrefill
+// so the modal can read it if it supports prefill; we also best-effort populate visible inputs.
+function _openRequestFromPrefill(prefill, msg) {
+  window._lowStockPrefill = prefill;
+  switchPage('requests');
+  if (typeof window.openNewRequestModal === 'function') {
+    setTimeout(() => {
+      try { openNewRequestModal(); } catch (e) {}
+      setTimeout(() => {
+        if (prefill.supplierId) {
+          const sel = document.querySelector('#new-req-supplier, [data-req-supplier], select[name="req-supplier"]');
+          if (sel) { sel.value = prefill.supplierId; sel.dispatchEvent(new Event('change', { bubbles:true })); }
+        }
+        const notesEl = document.querySelector('#new-req-notes, [data-req-notes], textarea[name="req-notes"]');
+        if (notesEl && prefill.notes) notesEl.value = prefill.notes;
+      }, 120);
+    }, 80);
+  }
+  toast(msg || 'Opening request form\u2026');
 }
 
 // ═══════════════════════════════════════════════════════════════════
