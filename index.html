@@ -160,7 +160,7 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 .badge-cancelled{background:var(--red-lt);color:var(--red)}
 /* MOBILE */
 .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;height:var(--bottomnav-h);background:#fff;border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
-.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;padding:6px 2px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:500;color:var(--muted);cursor:pointer;border:none;background:none;padding:6px 2px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;position:relative}
 .bnav-item i{font-size:21px;line-height:1}
 .bnav-item.active{color:var(--green)}
 .mobile-list{display:none;flex-direction:column;gap:8px}
@@ -225,6 +225,191 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 .heatmap-grid { display:grid; grid-template-columns:60px repeat(7, 1fr); gap:2px; font-size:10px; }
 .heatmap-cell { padding:6px 2px; text-align:center; border-radius:3px; font-family:'DM Mono',monospace; }
 .heatmap-hdr { font-weight:600; color:var(--muted); padding:4px 2px; text-align:center; }
+
+/* ═════════════════════════════════════════════════════════════════ */
+/*  STOCK INTAKE PIPELINE — guided wizard for non-technical users    */
+/* ═════════════════════════════════════════════════════════════════ */
+.pipeline-wrap{max-width:780px;margin:0 auto}
+.pipeline-intro{background:linear-gradient(135deg,#dcfce7 0%,#f0fdf4 100%);border:1px solid #86efac;border-radius:14px;padding:18px 20px;margin-bottom:20px}
+.pipeline-intro h3{font-size:16px;font-weight:700;color:var(--green);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.pipeline-intro p{font-size:13px;color:var(--ink);line-height:1.5}
+.pipeline-intro .draft-bar{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px dashed #86efac;font-size:12px;color:var(--muted)}
+.pipeline-intro .draft-bar strong{color:var(--green)}
+
+/* Stepper bar */
+.stepper{display:flex;align-items:center;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:20px;overflow-x:auto;scrollbar-width:none;gap:4px}
+.stepper::-webkit-scrollbar{display:none}
+.step-dot{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;min-width:64px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.step-dot.locked{cursor:not-allowed;opacity:.65}
+.step-circle{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;background:#f1f5f9;color:var(--muted);border:2px solid #e2e8f0;transition:all .25s}
+.step-dot.done .step-circle{background:var(--green);color:#fff;border-color:var(--green)}
+.step-dot.current .step-circle{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 0 0 4px rgba(37,99,235,.15);transform:scale(1.06)}
+.step-label{font-size:11px;font-weight:600;color:var(--muted);text-align:center;line-height:1.2;max-width:78px}
+.step-dot.done .step-label{color:var(--green)}
+.step-dot.current .step-label{color:var(--blue)}
+.step-connector{height:2px;background:#e2e8f0;flex:1;min-width:14px;margin-top:-26px;border-radius:2px;transition:background .3s}
+.step-connector.done{background:var(--green)}
+
+/* Step card body */
+.step-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px 22px 16px;margin-bottom:16px;animation:stepFadeIn .3s ease}
+@keyframes stepFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.step-card h3{font-size:18px;font-weight:700;color:var(--ink);margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.step-card h3 .step-num{background:var(--blue);color:#fff;font-size:13px;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-card .step-help{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+.step-card .field-block{margin-bottom:16px}
+.step-card .field-block label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.step-card .field-block .hint{font-size:11px;color:var(--muted);font-weight:400;margin-left:6px}
+
+/* Big tap-friendly option buttons */
+.big-option{display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;background:#fff;border:2px solid var(--border);border-radius:12px;text-align:left;cursor:pointer;font-family:inherit;color:var(--ink);transition:all .15s;-webkit-tap-highlight-color:transparent;margin-bottom:10px}
+.big-option:hover{border-color:var(--green);background:#f0fdf4}
+.big-option.selected{border-color:var(--green);background:#f0fdf4;box-shadow:0 0 0 3px rgba(22,163,74,.12)}
+.big-option .opt-icon{width:42px;height:42px;border-radius:10px;background:var(--green-lt);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.big-option .opt-text{flex:1;min-width:0}
+.big-option .opt-title{font-size:15px;font-weight:600;margin-bottom:2px}
+.big-option .opt-sub{font-size:12px;color:var(--muted)}
+.big-option .opt-check{color:var(--green);font-size:20px;flex-shrink:0;opacity:0;transition:opacity .15s}
+.big-option.selected .opt-check{opacity:1}
+
+/* Item card for adding requested items */
+.intake-item-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;transition:border-color .2s}
+.intake-item-card.has-error{border-color:var(--red);background:#fef2f2}
+.intake-item-card .ic-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.intake-item-card .ic-head .ic-num{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.intake-item-card .ic-head .ic-tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+.tag-new{background:var(--blue-lt);color:var(--blue)}
+.tag-existing{background:var(--green-lt);color:var(--green)}
+.intake-add-item-btn{width:100%;padding:14px;background:#f0fdf4;border:2px dashed #86efac;border-radius:12px;color:var(--green);font-weight:600;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;transition:background .15s;-webkit-tap-highlight-color:transparent}
+.intake-add-item-btn:hover{background:#dcfce7}
+
+/* Configure pricing card per item in step 4 */
+.intake-config-card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+.intake-config-card .ccg-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.intake-config-card .ccg-head .ccg-icon{width:36px;height:36px;border-radius:10px;background:var(--amber-lt);color:var(--amber);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.intake-config-card .ccg-head .ccg-name{font-weight:700;font-size:15px;color:var(--ink)}
+.intake-config-card .ccg-head .ccg-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.intake-warning{background:var(--amber-lt);border:1px solid #fde68a;color:#92400e;padding:8px 12px;border-radius:8px;font-size:12px;margin-top:8px;display:flex;align-items:center;gap:6px}
+
+/* Review summary */
+.intake-summary-block{background:var(--surface);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.intake-summary-block h4{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.intake-summary-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px dashed #e2e8f0}
+.intake-summary-row:last-child{border-bottom:none}
+.intake-summary-row .lbl{color:var(--muted)}
+.intake-summary-row .val{font-weight:600;color:var(--ink);text-align:right}
+
+/* Sticky nav buttons at bottom of pipeline */
+.pipeline-nav{position:sticky;bottom:0;background:#fff;border-top:2px solid var(--border);padding:12px 0;margin:0 -22px -16px;padding:14px 22px;display:flex;gap:10px;align-items:center;border-radius:0 0 14px 14px}
+.pipeline-nav .nav-spacer{flex:1}
+.pipeline-nav .btn-back{background:#f1f5f9;color:var(--ink);border:1px solid var(--border)}
+.pipeline-nav .btn-next{background:var(--green);color:#fff;font-weight:700;min-width:130px;justify-content:center}
+.pipeline-nav .btn-next:disabled{opacity:.45;cursor:not-allowed}
+.pipeline-nav .btn-finish{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;font-weight:700;min-width:150px;justify-content:center}
+.pipeline-nav .step-counter{font-size:12px;color:var(--muted);font-weight:600}
+
+/* Success celebration */
+.intake-success{text-align:center;padding:30px 20px;animation:pop .5s ease}
+@keyframes pop{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+.intake-success-icon{width:80px;height:80px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 16px;box-shadow:0 8px 24px rgba(22,163,74,.3)}
+.intake-success h3{font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.intake-success p{font-size:14px;color:var(--muted);margin-bottom:20px}
+
+/* Mobile tweaks for pipeline */
+@media(max-width:767px){
+  .stepper{padding:10px 8px;border-radius:10px}
+  .step-dot{min-width:54px}
+  .step-circle{width:30px;height:30px;font-size:13px}
+  .step-label{font-size:10px;max-width:60px}
+  .step-card{padding:18px 16px 14px;border-radius:12px}
+  .step-card h3{font-size:16px}
+  .big-option{padding:14px 14px;gap:10px}
+  .big-option .opt-icon{width:38px;height:38px;font-size:18px}
+  .big-option .opt-title{font-size:14px}
+  .pipeline-nav{margin:0 -16px -14px;padding:12px 16px;flex-wrap:wrap}
+  .pipeline-nav .btn-next, .pipeline-nav .btn-finish{flex:1}
+  .pipeline-nav .step-counter{width:100%;text-align:center;order:-1;margin-bottom:4px}
+}
+
+/* ───────── CUSTOMER / KHATA (CREDIT BOOK) ───────── */
+.cust-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.cust-kpi{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden}
+.cust-kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:6px}
+.cust-kpi-value{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;line-height:1.1}
+.cust-kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.cust-kpi-icon{position:absolute;right:12px;top:12px;font-size:22px;opacity:.18}
+.cust-search-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.cust-search-row input{flex:1;min-width:180px}
+.cust-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:.15s ease;position:relative}
+.cust-card:hover{border-color:var(--blue);box-shadow:0 2px 8px rgba(37,99,235,.08)}
+.cust-card.has-due{border-left:4px solid var(--amber)}
+.cust-card.overdue{border-left:4px solid var(--red);background:#fffbfb}
+.cust-card.clean{border-left:4px solid var(--green)}
+.cust-card-top{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.cust-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+.cust-name{font-size:15px;font-weight:600;color:var(--ink);line-height:1.2}
+.cust-meta{font-size:12px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:4px 12px}
+.cust-due-pill{margin-left:auto;text-align:right;flex-shrink:0}
+.cust-due-pill .amt{font-family:'DM Mono',monospace;font-weight:700;font-size:16px}
+.cust-due-pill .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.cust-card-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.cust-stats-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11px;color:var(--muted)}
+.cust-stats-row > span{display:inline-flex;align-items:center;gap:4px}
+.payment-status-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.psb-paid{background:#dcfce7;color:#15803d}
+.psb-loan{background:#fed7aa;color:#c2410c}
+.psb-partial{background:#fef3c7;color:#a16207}
+.psb-overdue{background:#fee2e2;color:#b91c1c}
+.loan-toggle-wrap{margin:14px 0;padding:12px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px}
+.loan-toggle-wrap.active{background:#fef3c7;border-color:#f59e0b}
+.loan-toggle-row{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.loan-toggle-row input[type="checkbox"]{width:20px;height:20px;cursor:pointer;flex-shrink:0}
+.loan-toggle-row .lbl-main{font-weight:600;font-size:14px;color:#92400e}
+.loan-toggle-row .lbl-sub{font-size:11px;color:#a16207;margin-left:auto}
+.loan-cust-section{margin-top:12px;padding-top:12px;border-top:1px dashed #fde68a;display:none}
+.loan-toggle-wrap.active .loan-cust-section{display:block}
+.loan-cust-grid{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.loan-cust-grid .form-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px}
+.loan-paid-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.cust-inline-add{margin-top:10px;padding:12px;background:#fff;border:1px solid var(--border);border-radius:10px}
+.cust-inline-add h6{font-size:13px;font-weight:600;margin:0 0 8px 0;color:var(--ink)}
+.cust-inline-add .row{margin:0}
+.cust-detail-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .15s ease}
+.cust-detail-modal{background:#fff;border-radius:14px;width:100%;max-width:760px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.cust-detail-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.cust-detail-header .cust-avatar{width:48px;height:48px;font-size:18px}
+.cust-detail-body{padding:16px 20px;overflow-y:auto;flex:1}
+.cust-detail-footer{padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;flex-wrap:wrap}
+.ledger-row{display:grid;grid-template-columns:90px 1fr 110px 110px 110px;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);align-items:center;font-size:12px}
+.ledger-row.header{font-weight:600;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em;background:var(--surface);border-radius:8px 8px 0 0}
+.ledger-row.payment{background:#f0fdf4}
+.ledger-row .lr-amt{font-family:'DM Mono',monospace;text-align:right}
+.ledger-row .lr-amt.debit{color:var(--red)}
+.ledger-row .lr-amt.credit{color:var(--green)}
+.ledger-row .lr-bal{font-family:'DM Mono',monospace;text-align:right;font-weight:600}
+.repay-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:2100;display:flex;align-items:center;justify-content:center;padding:16px}
+.repay-modal{background:#fff;border-radius:14px;width:100%;max-width:440px;overflow:hidden;display:flex;flex-direction:column}
+.repay-modal-head{padding:16px 20px;background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff}
+.repay-modal-head h3{margin:0;font-size:18px;font-weight:600}
+.repay-modal-head .due-amt{font-family:'DM Mono',monospace;font-size:24px;font-weight:700;margin-top:6px}
+.repay-modal-body{padding:18px 20px}
+.repay-modal-footer{padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px}
+.repay-quick-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.repay-quick-btn{padding:6px 12px;background:#f1f5f9;border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;color:var(--ink)}
+.repay-quick-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+.alert-due-card{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:13px}
+.alert-due-card.overdue{background:#fef2f2;border-color:#fecaca}
+.alert-due-card .ico{font-size:20px;flex-shrink:0}
+.alert-due-card.overdue .ico{color:var(--red)}
+.alert-due-card:not(.overdue) .ico{color:var(--amber)}
+@media (max-width:640px){
+  .ledger-row{grid-template-columns:1fr;gap:4px;padding:10px 12px}
+  .ledger-row.header{display:none}
+  .ledger-row .lr-amt,.ledger-row .lr-bal{text-align:left}
+  .ledger-row .lr-cell::before{content:attr(data-lbl);font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-right:6px}
+  .cust-detail-header{flex-wrap:wrap}
+  .loan-cust-grid{grid-template-columns:1fr}
+  .cust-due-pill{margin-left:0;width:100%;text-align:left;margin-top:6px}
+}
 </style>
 </head>
 <body>
@@ -242,9 +427,11 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
   <div class="sidebar-section-label">Overview</div>
   <button class="nav-item active" data-page="dashboard"><i class="bi bi-grid-1x2-fill"></i> Dashboard</button>
   <div class="sidebar-section-label">Operations</div>
+  <button class="nav-item" data-page="stockintake" style="background:#f0fdf4;color:var(--green);font-weight:600"><i class="bi bi-magic"></i> Stock Intake <span style="background:var(--green);color:#fff;font-size:9px;padding:2px 5px;border-radius:8px;margin-left:auto">GUIDED</span></button>
   <button class="nav-item" data-page="inventory"><i class="bi bi-boxes"></i> Inventory</button>
   <button class="nav-item" data-page="sales"><i class="bi bi-cart-check-fill"></i> Sales</button>
   <button class="nav-item" data-page="suppliers"><i class="bi bi-truck-front-fill"></i> Suppliers</button>
+  <button class="nav-item" data-page="customers"><i class="bi bi-people-fill"></i> Customers <span id="nav-cust-due-badge" style="background:var(--amber);color:#fff;font-size:9px;padding:2px 5px;border-radius:8px;margin-left:auto;display:none"></span></button>
   <button class="nav-item" data-page="requests"><i class="bi bi-clipboard-check"></i> Purchase Requests</button>
   <div class="sidebar-section-label">Reports</div>
   <button class="nav-item" data-page="pnl"><i class="bi bi-bar-chart-fill"></i> P&amp;L Report</button>
@@ -256,11 +443,11 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 
 <nav class="bottom-nav">
   <button class="bnav-item active" data-page="dashboard"><i class="bi bi-grid-1x2-fill"></i>Home</button>
+  <button class="bnav-item" data-page="stockintake" style="color:var(--green)"><i class="bi bi-magic"></i>Intake</button>
   <button class="bnav-item" data-page="inventory"><i class="bi bi-boxes"></i>Stock</button>
   <button class="bnav-item" data-page="sales"><i class="bi bi-cart-check-fill"></i>Sales</button>
-  <button class="bnav-item" data-page="suppliers"><i class="bi bi-truck-front-fill"></i>Suppliers</button>
-  <button class="bnav-item" data-page="requests"><i class="bi bi-clipboard-check"></i>Requests</button>
-  <button class="bnav-item" data-page="pnl"><i class="bi bi-bar-chart-fill"></i>P&amp;L</button>
+  <button class="bnav-item" data-page="customers" style="color:#7c3aed"><i class="bi bi-journal-bookmark-fill"></i>Khata <span id="bnav-cust-due-dot" style="display:none;position:absolute;top:6px;right:calc(50% - 18px);width:8px;height:8px;background:var(--amber);border-radius:50%"></span></button>
+  <button class="bnav-item" data-page="requests"><i class="bi bi-clipboard-check"></i>Orders</button>
 </nav>
 
 <main class="main">
@@ -284,6 +471,19 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
       <div class="c-card-title"><i class="bi bi-clipboard-check"></i> Pending Purchase Requests <span id="dash-req-badge" style="margin-left:auto"></span></div>
       <div id="dash-requests"></div>
     </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- STOCK INTAKE PIPELINE — guided wizard for non-technical users  -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div id="page-stockintake" class="page">
+    <div class="page-header">
+      <div>
+        <h2><i class="bi bi-magic" style="color:var(--green)"></i> Stock Intake</h2>
+        <p>Guided steps for adding new stock — from order to shelf</p>
+      </div>
+    </div>
+    <div class="pipeline-wrap" id="pipeline-container"></div>
   </div>
 
   <!-- INVENTORY -->
@@ -337,6 +537,51 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
           <span id="st-override-badge" class="badge-gs" style="display:none;background:#fef3c7;color:#d97706;font-size:11px"><i class="bi bi-tag-fill"></i> Custom pricing applied</span>
         </div>
       </div>
+
+      <!-- LOAN / CREDIT SALE TOGGLE -->
+      <div id="loan-toggle-wrap" class="loan-toggle-wrap">
+        <label class="loan-toggle-row">
+          <input type="checkbox" id="sale-is-loan" onchange="onLoanToggleChange()">
+          <span class="lbl-main"><i class="bi bi-journal-bookmark"></i> Mark as Loan / Credit Sale (Khata)</span>
+          <span class="lbl-sub">Customer will pay later</span>
+        </label>
+        <div class="loan-cust-section">
+          <div class="loan-cust-grid">
+            <div>
+              <label class="form-label">Select Customer <span style="color:var(--red)">*</span></label>
+              <select class="form-select" id="sale-customer-sel" onchange="onSaleCustomerChange()">
+                <option value="">— Choose customer —</option>
+              </select>
+            </div>
+            <button type="button" class="btn-gs btn-outline-gs btn-sm-gs" onclick="toggleInlineCustAdd()" style="white-space:nowrap"><i class="bi bi-person-plus"></i> Add New</button>
+          </div>
+          <div id="inline-cust-add" class="cust-inline-add" style="display:none">
+            <h6><i class="bi bi-person-plus-fill"></i> Quick Add Customer</h6>
+            <div class="row g-2">
+              <div class="col-12 col-sm-6"><label class="form-label">Name <span style="color:var(--red)">*</span></label><input type="text" class="form-control" id="inline-cust-name" placeholder="Customer name"></div>
+              <div class="col-12 col-sm-6"><label class="form-label">Phone <span style="color:var(--red)">*</span></label><input type="tel" class="form-control" id="inline-cust-phone" placeholder="10-digit phone" inputmode="tel"></div>
+              <div class="col-12 col-sm-6"><label class="form-label">Address <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="text" class="form-control" id="inline-cust-address" placeholder="Locality / village"></div>
+              <div class="col-12 col-sm-6"><label class="form-label">Notes <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="text" class="form-control" id="inline-cust-notes" placeholder="e.g. trusted regular"></div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button type="button" class="btn-gs btn-primary-gs btn-sm-gs" onclick="saveInlineCustomer()"><i class="bi bi-check2"></i> Save &amp; Select</button>
+              <button type="button" class="btn-gs btn-outline-gs btn-sm-gs" onclick="toggleInlineCustAdd()">Cancel</button>
+            </div>
+          </div>
+          <div class="loan-paid-row">
+            <div>
+              <label class="form-label">Amount paid now <span style="color:var(--muted);font-weight:400">(optional — partial payment)</span></label>
+              <input type="number" class="form-control" id="sale-paid-now" placeholder="0.00" step="0.01" min="0" inputmode="decimal" oninput="updateLoanPreview()">
+            </div>
+            <div>
+              <label class="form-label">Due date <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+              <input type="date" class="form-control" id="sale-due-date">
+            </div>
+          </div>
+          <div id="loan-preview" style="margin-top:10px;padding:10px 12px;background:#fff;border:1px dashed #f59e0b;border-radius:8px;font-size:12px;display:none"></div>
+        </div>
+      </div>
+
       <div class="mt-3">
         <button class="btn-gs btn-primary-gs" onclick="recordSale()"><i class="bi bi-check2-circle"></i> Record Transaction</button>
       </div>
@@ -374,6 +619,37 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
       <div class="mt-3"><button class="btn-gs btn-primary-gs" onclick="addPurchase()"><i class="bi bi-plus-lg"></i> Add Purchase</button></div>
     </div>
     <div class="c-card"><div class="c-card-title"><i class="bi bi-receipt-cutoff"></i> Purchase Records</div><div id="suppliers-table"></div></div>
+  </div>
+
+  <!-- CUSTOMERS / KHATA (Credit Book) -->
+  <div id="page-customers" class="page">
+    <div class="page-header">
+      <div><h2><i class="bi bi-journal-bookmark-fill" style="color:#7c3aed"></i> Customers / Khata</h2><p>Track customer credit, dues, and payments — like a digital credit notebook</p></div>
+      <button class="btn-gs btn-primary-gs btn-sm-gs" onclick="openCustomerCreateModal()"><i class="bi bi-person-plus-fill"></i> Add Customer</button>
+    </div>
+    <div id="customers-kpis"></div>
+    <div id="customers-alerts"></div>
+    <div class="c-card">
+      <div class="c-card-title" style="flex-wrap:wrap;gap:8px">
+        <i class="bi bi-people-fill"></i> Customer List
+        <div class="cust-search-row" style="margin:0 0 0 auto;flex-grow:0">
+          <input type="text" id="cust-search" class="form-control" placeholder="Search by name or phone..." style="font-size:12px;padding:6px 10px;min-width:160px" oninput="renderCustomersList()">
+          <select class="form-select" id="cust-filter" style="font-size:12px;padding:6px 10px;width:auto" onchange="renderCustomersList()">
+            <option value="all">All Customers</option>
+            <option value="due">With Dues</option>
+            <option value="overdue">Overdue (30+ days)</option>
+            <option value="clean">Cleared / No Dues</option>
+          </select>
+          <select class="form-select" id="cust-sort" style="font-size:12px;padding:6px 10px;width:auto" onchange="renderCustomersList()">
+            <option value="due-desc">Highest Due First</option>
+            <option value="name">Name (A–Z)</option>
+            <option value="recent">Recent Activity</option>
+            <option value="spent-desc">Top Spenders</option>
+          </select>
+        </div>
+      </div>
+      <div id="customers-list"></div>
+    </div>
   </div>
 
   <!-- PURCHASE REQUESTS -->
@@ -544,7 +820,7 @@ body{font-family:'Sora',sans-serif;background:var(--surface);color:var(--ink);mi
 //  CLOUD PERSISTENCE — Google Apps Script
 // ═══════════════════════════════════════════════════════════════════
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9IqTFoN9EEXVjTbEJF7ebkbMyeC3lz0sdkc8Oj5fcRgDnxZYR9ezMrWsglvfIDUzL/exec';
-let state = { inventory: [], sales: [], purchases: [], suppliers: [], supplierRequests: [], transactions: [] };
+let state = { inventory: [], sales: [], purchases: [], suppliers: [], supplierRequests: [], transactions: [], customers: [] };
 let _saveTimer = null;
 
 // loadState: fetch from Apps Script; migrate old data shapes for backward compat
@@ -598,6 +874,25 @@ function migrateState() {
   if (!Array.isArray(state.suppliers))         state.suppliers         = [];
   if (!Array.isArray(state.supplierRequests))  state.supplierRequests  = [];
   if (!Array.isArray(state.transactions))      state.transactions      = [];
+  if (!Array.isArray(state.customers))         state.customers         = [];
+
+  // ── MIGRATION: ensure every transaction has payment fields ──
+  // Old transactions are implicitly "paid" cash transactions.
+  state.transactions.forEach(t => {
+    if (t.paymentStatus === undefined) t.paymentStatus = 'paid';
+    if (t.customerId    === undefined) t.customerId    = null;
+    if (t.customerName  === undefined) t.customerName  = null;
+    if (t.paidAmount    === undefined) t.paidAmount    = (t.paymentStatus === 'paid') ? (t.totalRevenue || 0) : 0;
+    if (t.dueAmount     === undefined) t.dueAmount     = (t.paymentStatus === 'paid') ? 0 : (t.totalRevenue || 0);
+    if (!Array.isArray(t.paymentHistory)) t.paymentHistory = [];
+    if (t.dueDate       === undefined) t.dueDate       = null;
+  });
+
+  // Backfill missing customer fields
+  state.customers.forEach(c => {
+    if (!c.createdAt)              c.createdAt = new Date().toISOString();
+    if (!Array.isArray(c.payments)) c.payments = [];   // standalone repayments not tied to a single txn
+  });
 
   // ── MIGRATION: convert old flat state.sales into grouped state.transactions ──
   // Old format: state.sales = [{id, txnId, itemName, qty, ...}, ...]
@@ -1337,6 +1632,43 @@ function recordSale() {
 
   // Store ONE grouped transaction
   const billNo = generateBillNo(date);
+
+  // ── PAYMENT / LOAN handling ──
+  // Default = paid (cash). If "loan" toggle is on, attach customer + due amount.
+  const isLoan = !!(document.getElementById('sale-is-loan') && document.getElementById('sale-is-loan').checked);
+  let paymentStatus = 'paid', customerId = null, customerName = null;
+  let paidAmount = totalRevenue, dueAmount = 0, dueDate = null;
+  const paymentHistory = [];
+
+  if (isLoan) {
+    const custSel = document.getElementById('sale-customer-sel');
+    const custIdRaw = custSel ? custSel.value : '';
+    if (!custIdRaw) { toast('Select a customer for this loan/credit sale','error'); return; }
+    const cust = state.customers.find(c => c.id === parseInt(custIdRaw));
+    if (!cust) { toast('Customer not found','error'); return; }
+    customerId = cust.id;
+    customerName = cust.name;
+    const paidNowRaw = document.getElementById('sale-paid-now');
+    const paidNow = paidNowRaw && paidNowRaw.value !== '' ? parseFloat(paidNowRaw.value) : 0;
+    if (isNaN(paidNow) || paidNow < 0) { toast('Invalid amount paid','error'); return; }
+    if (paidNow > totalRevenue + 0.01) { toast('Amount paid cannot exceed total','error'); return; }
+    paidAmount = parseFloat(paidNow.toFixed(2));
+    dueAmount  = parseFloat((totalRevenue - paidNow).toFixed(2));
+    paymentStatus = dueAmount <= 0.01 ? 'paid' : (paidAmount > 0 ? 'partial' : 'loan');
+    const dueDateEl = document.getElementById('sale-due-date');
+    dueDate = (dueDateEl && dueDateEl.value) ? dueDateEl.value : null;
+    if (paidAmount > 0) {
+      paymentHistory.push({
+        id:        Date.now(),
+        date,
+        amount:    paidAmount,
+        method:    'cash',
+        note:      'Paid at time of sale',
+        recordedAt: new Date().toISOString()
+      });
+    }
+  }
+
   state.transactions.push({
     txnId,
     billNo,
@@ -1347,7 +1679,15 @@ function recordSale() {
     totalProfit:  parseFloat(totalProfit.toFixed(2)),
     totalCost:    parseFloat(totalCost.toFixed(2)),
     itemCount:    lineItems.length,
-    hasOverride:  lineItems.some(i=>i.priceOverridden)
+    hasOverride:  lineItems.some(i=>i.priceOverridden),
+    // Payment / loan fields
+    paymentStatus,
+    customerId,
+    customerName,
+    paidAmount,
+    dueAmount,
+    dueDate,
+    paymentHistory
   });
 
   // Rebuild flat sales view for analytics
@@ -1357,7 +1697,14 @@ function recordSale() {
   const overrideCount = lineItems.filter(i=>i.priceOverridden).length;
   let msg = `${billNo} — ${fmt(totalRevenue)}`;
   if (overrideCount > 0) msg += ` (${overrideCount} custom price${overrideCount>1?'s':''})`;
+  if (isLoan) {
+    if (paymentStatus === 'paid')   msg += ` — paid in full by ${customerName}`;
+    else if (paymentStatus === 'partial') msg += ` — Khata: ${customerName}, ${fmt(dueAmount)} due`;
+    else                            msg += ` — Khata: ${customerName}, ${fmt(dueAmount)} due`;
+  }
   toast(msg);
+  // Reset loan UI
+  resetLoanToggleUI();
   initSaleRows();
   renderAll();
   // Auto-open receipt for the newly recorded sale
@@ -1367,7 +1714,14 @@ function recordSale() {
 // Delete an entire transaction by txnId and restore all its stock
 function deleteTransaction(txnId) {
   const txn = state.transactions.find(t=>t.txnId===txnId);
-  if (!txn || !confirm(`Delete transaction ${txnId}? Stock for all ${txn.items.length} item(s) will be restored.`)) return;
+  if (!txn) return;
+  let extraWarn = '';
+  if (txn.customerId && txn.dueAmount > 0) {
+    extraWarn = `\n\nNote: This is a loan with ${fmt(txn.dueAmount)} pending. Deleting will REMOVE this debt from ${txn.customerName}'s khata.`;
+  } else if (txn.customerId && txn.paidAmount > 0) {
+    extraWarn = `\n\nNote: This was a credit sale for ${txn.customerName}. Payment records on this transaction will also be removed.`;
+  }
+  if (!confirm(`Delete transaction ${txnId}? Stock for all ${txn.items.length} item(s) will be restored.${extraWarn}`)) return;
   txn.items.forEach(li => {
     const inv = state.inventory.find(i=>i.id===li.itemId);
     if (inv) inv.qty = parseFloat((inv.qty + li.qty).toFixed(4));
@@ -1585,7 +1939,7 @@ function clearAllData() {
   if(!confirm('⚠ Clear ALL data?\n\nThis will permanently delete every item, sale, purchase, supplier and request. This cannot be undone.')) return;
   const typed = prompt('To confirm, type DELETE in capitals:');
   if (typed !== 'DELETE') { toast('Cancelled — nothing was deleted'); return; }
-  state = { inventory:[], sales:[], purchases:[], suppliers:[], supplierRequests:[], transactions:[] };
+  state = { inventory:[], sales:[], purchases:[], suppliers:[], supplierRequests:[], transactions:[], customers:[] };
   save(); toast('All data cleared'); renderAll();
 }
 
@@ -1601,6 +1955,11 @@ function renderAll() {
   renderPnL();
   renderRequestsList();
   populateSupplierDropdown();
+  populateCustomerDropdown();
+  renderCustomersKPIs();
+  renderCustomerAlerts();
+  renderCustomersList();
+  updateCustomerNavBadges();
   var supSel = document.getElementById('sup-contact-sel');
   if (supSel) supSel.onchange = onSupplierContactChange;
   if (document.getElementById('page-sales').classList.contains('active')) renderSaleRows();
@@ -1622,6 +1981,10 @@ function renderDashboard() {
   const stockValue    = state.inventory.reduce((s,i)=>s+i.qty*i.cost, 0);
   const today         = new Date().toISOString().slice(0,10);
   const todayRev      = state.sales.filter(s=>s.date===today).reduce((s,x)=>s+x.revenue, 0);
+  // Outstanding khata dues
+  const totalDue      = (state.transactions||[]).reduce((s,t)=>s+(t.dueAmount||0),0);
+  const dueTxnCount   = (state.transactions||[]).filter(t=>(t.dueAmount||0)>0).length;
+  const dueCustCount  = new Set((state.transactions||[]).filter(t=>(t.dueAmount||0)>0 && t.customerId).map(t=>t.customerId)).size;
 
   const metrics = [
     {label:"Today's Revenue", value:fmt(todayRev),       icon:'bi-sun',          color:'#2563eb', bg:'#dbeafe'},
@@ -1630,17 +1993,23 @@ function renderDashboard() {
     {label:'Stock Value',     value:fmt(stockValue),     icon:'bi-boxes',         color:'#d97706', bg:'#fef3c7'},
     {label:'Items in Stock',  value:state.inventory.length, icon:'bi-tags',       color:'#7c3aed', bg:'#ede9fe'},
     {label:'Total Purchases', value:fmt(totalPurchase),  icon:'bi-truck-front',   color:'#64748b', bg:'#f1f5f9'},
+    {label:'Outstanding Khata Dues', value:fmt(totalDue), icon:'bi-journal-bookmark-fill', color: totalDue>0?'#d97706':'#16a34a', bg: totalDue>0?'#fef3c7':'#dcfce7', sub: totalDue>0 ? `${dueCustCount} customer${dueCustCount!==1?'s':''} · ${dueTxnCount} bill${dueTxnCount!==1?'s':''}` : 'All cleared ✓', onClick:"switchPage('customers')"},
   ];
   document.getElementById('dash-metrics').innerHTML = metrics.map(m=>`
-    <div class="metric-card" style="--accent-color:${m.color}">
+    <div class="metric-card" style="--accent-color:${m.color};${m.onClick?'cursor:pointer':''}" ${m.onClick?`onclick="${m.onClick}"`:''}>
       <div class="metric-icon" style="background:${m.bg};color:${m.color}"><i class="bi ${m.icon}"></i></div>
       <div class="metric-label">${m.label}</div>
       <div class="metric-value ${m.cls||''}" style="color:${m.color}">${m.value}</div>
+      ${m.sub ? `<div style="font-size:10px;color:var(--muted);margin-top:4px">${m.sub}</div>` : ''}
     </div>`).join('');
 
   const margin = totalRevenue > 0 ? ((profit/totalRevenue)*100).toFixed(1) : 0;
+  // Cash collected vs receivables
+  const totalCollected = (state.transactions||[]).reduce((s,t)=>s+(t.paidAmount||0),0);
   document.getElementById('dash-pnl').innerHTML=`
-    <div class="pnl-row"><span style="color:var(--muted)">Total Revenue</span><span style="color:var(--green);font-weight:600">${fmt(totalRevenue)}</span></div>
+    <div class="pnl-row"><span style="color:var(--muted)">Total Revenue (earned)</span><span style="color:var(--green);font-weight:600">${fmt(totalRevenue)}</span></div>
+    <div class="pnl-row"><span style="color:var(--muted)">— Cash collected</span><span style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalCollected)}</span></div>
+    <div class="pnl-row"><span style="color:var(--muted)">— Khata receivables</span><span style="color:${totalDue>0?'var(--amber)':'var(--muted)'};font-family:'DM Mono',monospace">${fmt(totalDue)}</span></div>
     <div class="pnl-row"><span style="color:var(--muted)">Cost of Goods Sold</span><span style="color:var(--red)">${fmt(totalCost)}</span></div>
     <div class="pnl-row"><span style="color:var(--muted)">Supplier Purchases</span><span style="color:var(--red)">${fmt(totalPurchase)}</span></div>
     <div class="pnl-row total"><span>Gross Profit</span><span style="color:${profit>=0?'var(--green)':'var(--red)'}">${fmt(profit)}</span></div>
@@ -1939,16 +2308,19 @@ function renderSalesTable() {
           <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--blue)">${txn.billNo || txn.txnId}</span>
           <span class="badge-gs badge-info" style="font-size:10px">${txn.itemCount} item${txn.itemCount!==1?'s':''}</span>
           ${hasOverride?'<span class="badge-gs" style="background:#fef3c7;color:#d97706;font-size:9px"><i class="bi bi-tag-fill"></i> Custom price</span>':''}
+          ${_paymentStatusBadge(txn)}
           <i class="bi bi-chevron-${isExpanded?'up':'down'}" style="color:var(--muted);font-size:14px;margin-left:auto;flex-shrink:0"></i>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12px;color:var(--muted)">
           <span><i class="bi bi-calendar3"></i> ${txn.date}</span>
           <span style="color:var(--green);font-weight:600;font-family:'DM Mono',monospace">${fmt(txn.totalRevenue)}</span>
           <span style="color:${txn.totalProfit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">Profit: ${fmt(txn.totalProfit)}</span>
+          ${txn.customerName ? `<span><i class="bi bi-person-fill"></i> <span style="color:#7c3aed;font-weight:600;cursor:pointer" onclick="event.stopPropagation();openCustomerDetail(${txn.customerId})">${txn.customerName}</span>${txn.dueAmount > 0 ? ` · Due: <strong style="color:var(--amber)">${fmt(txn.dueAmount)}</strong>` : ''}</span>` : ''}
         </div>
         <!-- Action buttons row -->
         <div style="display:flex;gap:8px;flex-wrap:wrap" onclick="event.stopPropagation()">
           <button class="btn-gs btn-primary-gs btn-sm-gs" style="font-size:11px;padding:5px 10px" onclick="openReceipt('${txn.txnId}')"><i class="bi bi-receipt"></i> Receipt</button>
+          ${txn.customerId && txn.dueAmount > 0 ? `<button class="btn-gs btn-sm-gs" style="font-size:11px;padding:5px 10px;background:#16a34a;color:#fff" onclick="openRepaymentModal(${txn.customerId}, '${txn.txnId}')"><i class="bi bi-cash-coin"></i> Record Payment</button>` : ''}
           <button class="btn-gs btn-danger-gs btn-sm-gs" style="font-size:11px;padding:5px 10px" onclick="deleteTransaction('${txn.txnId}')"><i class="bi bi-trash3"></i> Delete</button>
         </div>
       </div>
@@ -3217,6 +3589,16 @@ function _receiptHTML(txn) {
   }).join('');
   const created = txn.createdAt ? new Date(txn.createdAt) : new Date(txn.date);
   const time = created.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  const isCredit = txn.customerId && (txn.paymentStatus === 'loan' || txn.paymentStatus === 'partial');
+  const customerLine = txn.customerName
+    ? `<div class="row"><span>Customer:</span><strong>${txn.customerName}</strong></div>` : '';
+  const paymentLines = isCredit
+    ? `<hr>
+       <div class="row" style="font-size:11px"><span>Bill total:</span><span>${fmt(txn.totalRevenue)}</span></div>
+       <div class="row" style="font-size:11px"><span>Paid now:</span><span>${fmt(txn.paidAmount)}</span></div>
+       <div class="row" style="font-size:12px;color:#b91c1c"><strong>Balance due:</strong><strong>${fmt(txn.dueAmount)}</strong></div>
+       ${txn.dueDate ? `<div class="row" style="font-size:10px;color:#555"><span>Due date:</span><span>${txn.dueDate}</span></div>` : ''}
+       <div class="center" style="font-size:9px;color:#b91c1c;margin-top:4px;font-weight:600">*** KHATA / CREDIT SALE ***</div>` : '';
   return `
     <h3>My Grocery Shop</h3>
     <div class="center" style="font-size:10px;color:#444;margin-bottom:6px">Tax Invoice / Bill of Sale</div>
@@ -3224,12 +3606,14 @@ function _receiptHTML(txn) {
     <div class="row"><span>Bill No:</span><strong>${txn.billNo||txn.txnId}</strong></div>
     <div class="row"><span>Date:</span><span>${txn.date}</span></div>
     <div class="row"><span>Time:</span><span>${time}</span></div>
+    ${customerLine}
     <hr>
     <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amt</th></tr></thead>
     <tbody>${lines}</tbody></table>
     <hr>
     <div class="row" style="font-size:14px"><strong>TOTAL</strong><strong>${fmt(txn.totalRevenue)}</strong></div>
     <div class="row" style="font-size:10px;color:#555;margin-top:2px"><span>Items:</span><span>${txn.itemCount}</span></div>
+    ${paymentLines}
     <hr>
     <div class="center" style="font-size:10px;color:#555">Thank you for your purchase!</div>
     <div class="center" style="font-size:9px;color:#888;margin-top:4px">Saved on ${created.toLocaleDateString('en-IN')}</div>
@@ -3470,6 +3854,1535 @@ function renderReportsTab(sales) {
     };
   }
 })();
+
+// ═══════════════════════════════════════════════════════════════════
+//  STOCK INTAKE PIPELINE — guided wizard module
+//  ───────────────────────────────────────────────────────────────────
+//  This module is a UI LAYER over the existing functions.
+//  It does NOT reimplement business logic — it calls:
+//    • _applyRefill()        for stock + price updates (Inventory)
+//    • state.suppliers push  via the same shape as saveSupplier()
+//    • state.supplierRequests push via the same shape as saveNewRequest()
+//    • state.purchases push  via the same shape as confirmRequest()
+//    • save()                for cloud + local persistence
+//    • toast()               for user feedback
+//
+//  All existing manual workflows (Inventory page, Suppliers page,
+//  Purchase Requests page) keep working unchanged.
+// ═══════════════════════════════════════════════════════════════════
+
+// ── Pipeline state (held in memory + persisted to localStorage as draft) ──
+const PIPELINE_DRAFT_KEY = 'gsm_intake_draft_v1';
+let pipeline = _emptyPipeline();
+
+function _emptyPipeline() {
+  return {
+    currentStep: 1,
+    addingSupplier: false,
+    supplierId: null,
+    supplierName: '',
+    deliveryDate: '',
+    notes: '',
+    items: [],
+    requestId: null,
+    confirmedItems: [],
+    finished: false
+  };
+}
+
+function _savePipelineDraft() {
+  try { localStorage.setItem(PIPELINE_DRAFT_KEY, JSON.stringify(pipeline)); } catch(e){}
+}
+function _loadPipelineDraft() {
+  try {
+    const raw = localStorage.getItem(PIPELINE_DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (d && !d.finished) return d;
+  } catch(e){}
+  return null;
+}
+function _clearPipelineDraft() {
+  try { localStorage.removeItem(PIPELINE_DRAFT_KEY); } catch(e){}
+  pipeline = _emptyPipeline();
+}
+
+const PIPELINE_STEPS = [
+  { num:1, label:'Supplier',  icon:'bi-truck-front-fill' },
+  { num:2, label:'Items',     icon:'bi-list-ul' },
+  { num:3, label:'Delivery',  icon:'bi-box-seam' },
+  { num:4, label:'Pricing',   icon:'bi-tag-fill' },
+  { num:5, label:'Finish',    icon:'bi-check2-circle' }
+];
+
+function renderPipeline() {
+  const host = document.getElementById('pipeline-container');
+  if (!host) return;
+  if (pipeline.currentStep === 1 && !pipeline.supplierId && pipeline.items.length === 0 && !pipeline.addingSupplier && !pipeline.finished) {
+    const draft = _loadPipelineDraft();
+    if (draft && (draft.supplierId || draft.items.length>0)) {
+      host.innerHTML = _renderDraftRecoveryBanner(draft);
+      return;
+    }
+  }
+  host.innerHTML = _renderIntro() + _renderStepper() + _renderCurrentStep();
+}
+
+function _renderDraftRecoveryBanner(draft) {
+  return `<div class="pipeline-intro" style="background:linear-gradient(135deg,#fef3c7 0%,#fffbeb 100%);border-color:#fde68a">
+    <h3 style="color:var(--amber)"><i class="bi bi-clock-history"></i> Resume your previous work?</h3>
+    <p>You have a saved intake in progress — Step ${draft.currentStep} of 5 with ${draft.items.length} item${draft.items.length!==1?'s':''}${draft.supplierName?' from <strong>'+draft.supplierName+'</strong>':''}.</p>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn-gs btn-primary-gs" onclick="pipelineResumeDraft()"><i class="bi bi-arrow-clockwise"></i> Continue where I left off</button>
+      <button class="btn-gs btn-outline-gs" onclick="pipelineDiscardDraft()"><i class="bi bi-trash3"></i> Start fresh</button>
+    </div>
+  </div>`;
+}
+function pipelineResumeDraft() {
+  const d = _loadPipelineDraft(); if (!d) { renderPipeline(); return; }
+  pipeline = d;
+  renderPipeline();
+}
+function pipelineDiscardDraft() {
+  _clearPipelineDraft();
+  renderPipeline();
+}
+
+function _renderIntro() {
+  if (pipeline.finished) return '';
+  const hasItems = pipeline.items.length;
+  return `<div class="pipeline-intro">
+    <h3><i class="bi bi-magic"></i> Add New Stock — Step by Step</h3>
+    <p>Follow these 5 simple steps to add new stock from a supplier. Everything you need — supplier, items, prices, alerts — is in one place. No need to jump between pages.</p>
+    ${hasItems?`<div class="draft-bar"><i class="bi bi-cloud-check-fill" style="color:var(--green)"></i><span>Your progress is <strong>auto-saved</strong>. You can close this page and come back later.</span></div>`:''}
+  </div>`;
+}
+
+function _renderStepper() {
+  if (pipeline.finished) return '';
+  const cur = pipeline.currentStep;
+  let html = '<div class="stepper">';
+  PIPELINE_STEPS.forEach((s, idx) => {
+    const isDone    = s.num < cur;
+    const isCurrent = s.num === cur;
+    const cls = isDone ? 'done' : (isCurrent ? 'current' : 'locked');
+    const symbol = isDone ? '<i class="bi bi-check-lg"></i>' : s.num;
+    const onclick = (isDone || isCurrent) ? `onclick="pipelineGoToStep(${s.num})"` : '';
+    html += `<div class="step-dot ${cls}" ${onclick}>
+      <div class="step-circle">${symbol}</div>
+      <div class="step-label">${s.label}</div>
+    </div>`;
+    if (idx < PIPELINE_STEPS.length - 1) {
+      html += `<div class="step-connector ${isDone?'done':''}"></div>`;
+    }
+  });
+  html += '</div>';
+  return html;
+}
+
+function _renderCurrentStep() {
+  if (pipeline.finished) return _renderSuccessScreen();
+  switch (pipeline.currentStep) {
+    case 1: return pipeline.addingSupplier ? _renderStepAddSupplier() : _renderStep1Supplier();
+    case 2: return _renderStep2Items();
+    case 3: return _renderStep3Confirm();
+    case 4: return _renderStep4Pricing();
+    case 5: return _renderStep5Review();
+    default: return '';
+  }
+}
+
+// ─── STEP 1: Choose supplier ───────────────────────────────────────
+function _renderStep1Supplier() {
+  const suppliers = state.suppliers || [];
+  const supplierList = suppliers.length === 0
+    ? `<div class="empty-state" style="padding:24px 14px;background:var(--surface);border-radius:10px;margin-bottom:10px">
+         <i class="bi bi-person-plus" style="font-size:32px"></i>
+         <p style="font-size:13px;margin-top:8px">No suppliers added yet.<br>Tap the button below to add your first supplier.</p>
+       </div>`
+    : suppliers.map(s => `
+        <button class="big-option ${pipeline.supplierId===s.id?'selected':''}" onclick="pipelineSelectSupplier(${s.id})">
+          <div class="opt-icon"><i class="bi bi-truck-front-fill"></i></div>
+          <div class="opt-text">
+            <div class="opt-title">${s.name}</div>
+            <div class="opt-sub">${s.phone||s.person||s.items||'Tap to choose this supplier'}</div>
+          </div>
+          <div class="opt-check"><i class="bi bi-check-circle-fill"></i></div>
+        </button>`).join('');
+
+  return `<div class="step-card">
+    <h3><span class="step-num">1</span> Who is the supplier?</h3>
+    <p class="step-help">Choose the person or business who is delivering this stock. If they are not in the list, you can add them now.</p>
+    ${supplierList}
+    <button class="big-option" onclick="pipelineStartAddSupplier()" style="border-style:dashed;border-color:var(--blue);background:#f0f9ff">
+      <div class="opt-icon" style="background:var(--blue-lt);color:var(--blue)"><i class="bi bi-plus-lg"></i></div>
+      <div class="opt-text">
+        <div class="opt-title" style="color:var(--blue)">Add new supplier</div>
+        <div class="opt-sub">Supplier not in the list above</div>
+      </div>
+    </button>
+    ${_renderPipelineNav({ backHidden:true, nextDisabled: !pipeline.supplierId, nextLabel:'Next: Add Items' })}
+  </div>`;
+}
+
+// ─── STEP 1b: Add new supplier inline ──────────────────────────────
+function _renderStepAddSupplier() {
+  return `<div class="step-card">
+    <h3><span class="step-num" style="background:var(--blue)">+</span> Add New Supplier</h3>
+    <p class="step-help">Fill in the supplier's details. After saving, you will continue with the rest of the steps.</p>
+    <div class="field-block">
+      <label>Supplier / business name <span style="color:var(--red)">*</span></label>
+      <input type="text" class="form-control" id="pl-sup-name" placeholder="e.g. Krishna Traders">
+    </div>
+    <div class="row g-3">
+      <div class="col-12 col-sm-6 field-block">
+        <label>Phone number</label>
+        <input type="tel" class="form-control" id="pl-sup-phone" placeholder="9876543210" inputmode="tel">
+      </div>
+      <div class="col-12 col-sm-6 field-block">
+        <label>Contact person <span class="hint">(optional)</span></label>
+        <input type="text" class="form-control" id="pl-sup-person" placeholder="e.g. Ravi Kumar">
+      </div>
+    </div>
+    <div class="field-block">
+      <label>Address / notes <span class="hint">(optional)</span></label>
+      <input type="text" class="form-control" id="pl-sup-notes" placeholder="e.g. Market road, Trichy">
+    </div>
+    <div class="pipeline-nav">
+      <button class="btn-gs btn-back" onclick="pipelineCancelAddSupplier()"><i class="bi bi-arrow-left"></i> Back</button>
+      <div class="nav-spacer"></div>
+      <span class="step-counter">Adding supplier</span>
+      <button class="btn-gs btn-next" onclick="pipelineSaveNewSupplier()"><i class="bi bi-check-lg"></i> Save Supplier</button>
+    </div>
+  </div>`;
+}
+function pipelineStartAddSupplier() {
+  pipeline.addingSupplier = true;
+  _savePipelineDraft();
+  renderPipeline();
+}
+function pipelineCancelAddSupplier() {
+  pipeline.addingSupplier = false;
+  renderPipeline();
+}
+function pipelineSaveNewSupplier() {
+  const name   = document.getElementById('pl-sup-name').value.trim();
+  const phone  = document.getElementById('pl-sup-phone').value.trim();
+  const person = document.getElementById('pl-sup-person').value.trim();
+  const notes  = document.getElementById('pl-sup-notes').value.trim();
+  if (!name) {
+    document.getElementById('pl-sup-name').focus();
+    toast('Please enter the supplier name', 'error');
+    return;
+  }
+  const newSup = {
+    id: Date.now(), name, person, phone,
+    items: '', terms: 'Cash on delivery', notes
+  };
+  state.suppliers.push(newSup);
+  save();
+  pipeline.supplierId   = newSup.id;
+  pipeline.supplierName = name;
+  pipeline.addingSupplier = false;
+  _savePipelineDraft();
+  toast(`Supplier "${name}" added — continuing pipeline`);
+  if (typeof populateSupplierDropdown === 'function') populateSupplierDropdown();
+  renderPipeline();
+}
+function pipelineSelectSupplier(supId) {
+  const s = state.suppliers.find(x => x.id === supId);
+  if (!s) return;
+  pipeline.supplierId   = supId;
+  pipeline.supplierName = s.name;
+  _savePipelineDraft();
+  renderPipeline();
+}
+
+// ─── STEP 2: Add items being ordered ───────────────────────────────
+function _renderStep2Items() {
+  if (pipeline.items.length === 0) {
+    pipeline.items.push(_emptyIntakeItem());
+  }
+  const cats  = ['Grains & Pulses','Dairy','Vegetables','Fruits','Snacks','Beverages','Spices','Oils','Other'];
+  const units = ['kg','litre','packet','piece','box'];
+
+  const itemRows = pipeline.items.map((row, idx) => {
+    const existing = row.name && row.name.trim() ? state.inventory.find(i => i.name.toLowerCase() === row.name.trim().toLowerCase()) : null;
+    return `<div class="intake-item-card" id="pl-item-${row.rowId}">
+      <div class="ic-head">
+        <span class="ic-num">Item ${idx+1}</span>
+        ${row.name && row.name.trim() ? `<span class="ic-tag ${existing?'tag-existing':'tag-new'}">${existing?'<i class="bi bi-arrow-up-circle"></i> Existing item':'<i class="bi bi-plus-circle"></i> New item'}</span>` : ''}
+      </div>
+      <div class="field-block" style="margin-bottom:10px">
+        <label>Item name <span style="color:var(--red)">*</span></label>
+        <input type="text" class="form-control" list="pl-inv-names"
+          value="${(row.name||'').replace(/"/g,'&quot;')}"
+          placeholder="e.g. Basmati Rice 1kg"
+          oninput="pipelineUpdateItem(${row.rowId}, 'name', this.value)"
+          onchange="pipelineUpdateItem(${row.rowId}, 'name', this.value); renderPipeline()">
+      </div>
+      <div class="row g-2">
+        <div class="col-4">
+          <label class="form-label">Quantity <span style="color:var(--red)">*</span></label>
+          <input type="number" class="form-control" min="0" step="0.1" inputmode="decimal"
+            value="${row.qty||''}" placeholder="0"
+            oninput="pipelineUpdateItem(${row.rowId}, 'qty', this.value)">
+        </div>
+        <div class="col-4">
+          <label class="form-label">Unit</label>
+          <select class="form-select" onchange="pipelineUpdateItem(${row.rowId}, 'unit', this.value)">
+            ${units.map(u=>`<option${u===row.unit?' selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Cost ₹</label>
+          <input type="number" class="form-control" step="0.01" min="0" inputmode="decimal"
+            value="${row.estCost||''}" placeholder="Total"
+            oninput="pipelineUpdateItem(${row.rowId}, 'estCost', this.value)">
+        </div>
+      </div>
+      ${!existing ? `<div class="row g-2 mt-2">
+        <div class="col-7">
+          <label class="form-label">Category <span class="hint">(for new item)</span></label>
+          <select class="form-select" onchange="pipelineUpdateItem(${row.rowId}, 'cat', this.value)">
+            ${cats.map(c=>`<option${c===row.cat?' selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="col-5">
+          <label class="form-label">Expiry <span class="hint">(optional)</span></label>
+          <input type="date" class="form-control" value="${row.expiry||''}"
+            oninput="pipelineUpdateItem(${row.rowId}, 'expiry', this.value)">
+        </div>
+      </div>` : `<div class="intake-warning" style="background:var(--green-lt);border-color:#86efac;color:var(--green);margin-top:10px">
+        <i class="bi bi-info-circle-fill"></i> Already in inventory — quantity will be added to existing stock (${existing.qty} ${existing.unit})
+      </div>`}
+      ${pipeline.items.length > 1 ? `<div style="margin-top:10px;text-align:right">
+        <button class="btn-gs btn-danger-gs btn-sm-gs" onclick="pipelineRemoveItem(${row.rowId})"><i class="bi bi-x-lg"></i> Remove this item</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  const datalist = `<datalist id="pl-inv-names">${state.inventory.map(i=>`<option value="${i.name}">`).join('')}</datalist>`;
+
+  return `<div class="step-card">
+    <h3><span class="step-num">2</span> What items are coming in?</h3>
+    <p class="step-help">List every item the supplier is bringing. For each item, enter the quantity and total cost (the price you paid the supplier). Don't worry about selling price yet — that comes in Step 4.</p>
+    <div style="margin-bottom:8px;font-size:12px;color:var(--muted)"><i class="bi bi-truck-front-fill" style="color:var(--green)"></i> From <strong>${pipeline.supplierName}</strong></div>
+    ${datalist}
+    ${itemRows}
+    <button class="intake-add-item-btn" onclick="pipelineAddItem()"><i class="bi bi-plus-lg"></i> Add another item</button>
+    ${_renderPipelineNav({ nextDisabled: !_step2Valid(), nextLabel:'Next: Confirm Arrival' })}
+  </div>`;
+}
+function _emptyIntakeItem() {
+  return { rowId: Date.now()+Math.floor(Math.random()*1000), name:'', qty:0, unit:'kg', estCost:0, cat:'Other', expiry:'' };
+}
+function pipelineAddItem() {
+  pipeline.items.push(_emptyIntakeItem());
+  _savePipelineDraft();
+  renderPipeline();
+}
+function pipelineRemoveItem(rowId) {
+  pipeline.items = pipeline.items.filter(r => r.rowId !== rowId);
+  if (pipeline.items.length === 0) pipeline.items.push(_emptyIntakeItem());
+  _savePipelineDraft();
+  renderPipeline();
+}
+function pipelineUpdateItem(rowId, field, val) {
+  const row = pipeline.items.find(r => r.rowId === rowId);
+  if (!row) return;
+  if (field === 'qty' || field === 'estCost') row[field] = parseFloat(val) || 0;
+  else row[field] = val;
+  _savePipelineDraft();
+  // Toggle nav button without full re-render (preserves input focus)
+  const navBtn = document.querySelector('#page-stockintake .btn-next');
+  if (navBtn) {
+    if (_step2Valid()) navBtn.removeAttribute('disabled');
+    else navBtn.setAttribute('disabled', 'disabled');
+  }
+}
+function _step2Valid() {
+  const valid = pipeline.items.filter(r => r.name && r.name.trim() && r.qty > 0);
+  if (valid.length === 0) return false;
+  const names = valid.map(r => r.name.trim().toLowerCase());
+  if (names.some((n,i) => names.indexOf(n) !== i)) return false;
+  return true;
+}
+
+// ─── STEP 3: Confirm delivery ──────────────────────────────────────
+function _renderStep3Confirm() {
+  if (pipeline.confirmedItems.length === 0 || pipeline.confirmedItems.length !== pipeline.items.filter(i => i.name && i.qty > 0).length) {
+    pipeline.confirmedItems = pipeline.items
+      .filter(i => i.name && i.name.trim() && i.qty > 0)
+      .map(i => {
+        const existing = state.inventory.find(x => x.name.toLowerCase() === i.name.trim().toLowerCase());
+        return {
+          rowId:       i.rowId,
+          name:        i.name.trim(),
+          qty:         i.qty,
+          unit:        i.unit,
+          totalCost:   i.estCost,
+          cat:         i.cat,
+          expiry:      i.expiry,
+          isNew:       !existing,
+          existingId:  existing ? existing.id : null,
+          existingQty: existing ? existing.qty : 0,
+          sell:    existing ? existing.sell  : 0,
+          mrp:     existing ? existing.mrp   : 0,
+          alert:   existing ? existing.alert : 5,
+          barcode: '',
+          notes:   ''
+        };
+      });
+  }
+
+  const rows = pipeline.confirmedItems.map((it, idx) => `
+    <div class="intake-item-card">
+      <div class="ic-head">
+        <span class="ic-num">${it.name}</span>
+        <span class="ic-tag ${it.isNew?'tag-new':'tag-existing'}">${it.isNew?'New item':'Adding to existing'}</span>
+      </div>
+      ${!it.isNew ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px"><i class="bi bi-box-seam"></i> Currently in stock: <strong>${it.existingQty} ${it.unit}</strong></div>` : ''}
+      <div class="row g-2">
+        <div class="col-6">
+          <label class="form-label">Quantity received</label>
+          <input type="number" class="form-control" min="0" step="0.01" inputmode="decimal"
+            value="${it.qty}" oninput="pipelineUpdateConfirm(${idx}, 'qty', this.value)">
+        </div>
+        <div class="col-6">
+          <label class="form-label">Actual total cost ₹</label>
+          <input type="number" class="form-control" min="0" step="0.01" inputmode="decimal"
+            value="${it.totalCost||''}" placeholder="0.00" oninput="pipelineUpdateConfirm(${idx}, 'totalCost', this.value)">
+        </div>
+      </div>
+    </div>`).join('');
+
+  return `<div class="step-card">
+    <h3><span class="step-num">3</span> Has the stock arrived?</h3>
+    <p class="step-help">When the supplier hands over the stock, check what actually came in. The numbers below were what you ordered — change them if the supplier brought a different quantity or charged a different price.</p>
+    <div class="intake-warning" style="margin-bottom:14px;background:#dbeafe;color:#1e40af;border-color:#93c5fd">
+      <i class="bi bi-info-circle-fill"></i> Tip: You can do this when the goods physically arrive at your shop. Your progress is saved.
+    </div>
+    ${rows}
+    ${_renderPipelineNav({ nextDisabled: !_step3Valid(), nextLabel:'Next: Set Selling Prices' })}
+  </div>`;
+}
+function pipelineUpdateConfirm(idx, field, val) {
+  const it = pipeline.confirmedItems[idx]; if (!it) return;
+  it[field] = parseFloat(val) || 0;
+  _savePipelineDraft();
+  const navBtn = document.querySelector('#page-stockintake .btn-next');
+  if (navBtn) {
+    if (_step3Valid()) navBtn.removeAttribute('disabled');
+    else navBtn.setAttribute('disabled', 'disabled');
+  }
+}
+function _step3Valid() {
+  return pipeline.confirmedItems.length > 0 && pipeline.confirmedItems.every(i => i.qty > 0);
+}
+
+// ─── STEP 4: Configure pricing & alerts ────────────────────────────
+function _renderStep4Pricing() {
+  const cards = pipeline.confirmedItems.map((it, idx) => {
+    const unitCost = it.qty > 0 ? (it.totalCost / it.qty) : 0;
+    const margin   = it.sell > 0 && unitCost > 0 ? (((it.sell - unitCost) / it.sell) * 100).toFixed(0) : null;
+    const warnMrp  = it.mrp > 0 && it.sell > 0 && it.mrp < it.sell;
+    const warnSell = !it.sell || it.sell <= 0;
+    return `<div class="intake-config-card">
+      <div class="ccg-head">
+        <div class="ccg-icon"><i class="bi bi-tag-fill"></i></div>
+        <div style="flex:1;min-width:0">
+          <div class="ccg-name">${it.name}</div>
+          <div class="ccg-meta">${it.qty} ${it.unit} · cost <strong style="font-family:'DM Mono',monospace">₹${unitCost.toFixed(2)}/${it.unit}</strong>${it.isNew?' · <span style="color:var(--blue)">NEW</span>':''}</div>
+        </div>
+      </div>
+      <div class="row g-2">
+        <div class="col-6 col-sm-4">
+          <label class="form-label">Selling price ₹ <span style="color:var(--red)">*</span></label>
+          <input type="number" class="form-control" min="0" step="0.01" inputmode="decimal"
+            value="${it.sell||''}" placeholder="0.00"
+            oninput="pipelineUpdatePricing(${idx}, 'sell', this.value); pipelineRefreshMargin(${idx})">
+        </div>
+        <div class="col-6 col-sm-4">
+          <label class="form-label">MRP ₹ <span class="hint">(printed price)</span></label>
+          <input type="number" class="form-control" min="0" step="0.01" inputmode="decimal"
+            value="${it.mrp||''}" placeholder="0.00"
+            oninput="pipelineUpdatePricing(${idx}, 'mrp', this.value); pipelineRefreshWarnings(${idx})">
+        </div>
+        <div class="col-12 col-sm-4">
+          <label class="form-label">Low stock alert at</label>
+          <input type="number" class="form-control" min="0" step="1" inputmode="numeric"
+            value="${it.alert||5}" placeholder="5"
+            oninput="pipelineUpdatePricing(${idx}, 'alert', this.value)">
+        </div>
+        <div class="col-12 col-sm-7">
+          <label class="form-label">Barcode <span class="hint">(optional)</span></label>
+          <input type="text" class="form-control" value="${it.barcode||''}" placeholder="Scan or type..."
+            oninput="pipelineUpdatePricing(${idx}, 'barcode', this.value)">
+        </div>
+        <div class="col-12 col-sm-5">
+          <label class="form-label">Notes <span class="hint">(optional)</span></label>
+          <input type="text" class="form-control" value="${it.notes||''}" placeholder="e.g. shelf 3"
+            oninput="pipelineUpdatePricing(${idx}, 'notes', this.value)">
+        </div>
+      </div>
+      <div id="pl-margin-${idx}" style="margin-top:10px;font-size:12px">
+        ${margin !== null ? `<span style="color:${margin>=15?'var(--green)':'var(--amber)'}"><i class="bi bi-graph-up"></i> Profit margin: <strong>${margin}%</strong></span>` : ''}
+      </div>
+      <div id="pl-warn-${idx}">
+        ${warnSell ? `<div class="intake-warning"><i class="bi bi-exclamation-triangle-fill"></i> Selling price is required — without it the item can't be sold</div>` : ''}
+        ${warnMrp ? `<div class="intake-warning"><i class="bi bi-exclamation-triangle-fill"></i> MRP is lower than your selling price — that's unusual, please double-check</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="step-card">
+    <h3><span class="step-num">4</span> Set selling prices &amp; alerts</h3>
+    <p class="step-help">Now set how much you'll sell each item for. This is the most important step — your selling price decides your profit. You can also set the low-stock alert level so you get notified when it's time to reorder.</p>
+    ${cards}
+    ${_renderPipelineNav({ nextDisabled: !_step4Valid(), nextLabel:'Next: Review &amp; Finish' })}
+  </div>`;
+}
+function pipelineUpdatePricing(idx, field, val) {
+  const it = pipeline.confirmedItems[idx]; if (!it) return;
+  if (field === 'barcode' || field === 'notes') it[field] = val;
+  else it[field] = parseFloat(val) || 0;
+  _savePipelineDraft();
+  const navBtn = document.querySelector('#page-stockintake .btn-next');
+  if (navBtn) {
+    if (_step4Valid()) navBtn.removeAttribute('disabled');
+    else navBtn.setAttribute('disabled', 'disabled');
+  }
+}
+function pipelineRefreshMargin(idx) {
+  const it = pipeline.confirmedItems[idx]; if (!it) return;
+  const el = document.getElementById('pl-margin-'+idx); if (!el) return;
+  const unitCost = it.qty > 0 ? (it.totalCost / it.qty) : 0;
+  const margin = it.sell > 0 && unitCost > 0 ? (((it.sell - unitCost) / it.sell) * 100).toFixed(0) : null;
+  el.innerHTML = margin !== null ? `<span style="color:${margin>=15?'var(--green)':'var(--amber)'}"><i class="bi bi-graph-up"></i> Profit margin: <strong>${margin}%</strong></span>` : '';
+  pipelineRefreshWarnings(idx);
+}
+function pipelineRefreshWarnings(idx) {
+  const it = pipeline.confirmedItems[idx]; if (!it) return;
+  const warnEl = document.getElementById('pl-warn-'+idx); if (!warnEl) return;
+  const warnSell = !it.sell || it.sell <= 0;
+  const warnMrp  = it.mrp > 0 && it.sell > 0 && it.mrp < it.sell;
+  warnEl.innerHTML = (warnSell ? `<div class="intake-warning"><i class="bi bi-exclamation-triangle-fill"></i> Selling price is required — without it the item can't be sold</div>` : '')
+    + (warnMrp ? `<div class="intake-warning"><i class="bi bi-exclamation-triangle-fill"></i> MRP is lower than your selling price — that's unusual, please double-check</div>` : '');
+}
+function _step4Valid() {
+  return pipeline.confirmedItems.every(it => it.sell > 0);
+}
+
+// ─── STEP 5: Review & Finish ───────────────────────────────────────
+function _renderStep5Review() {
+  const totalCost  = pipeline.confirmedItems.reduce((s,i)=>s+(i.totalCost||0), 0);
+  const totalSellValue = pipeline.confirmedItems.reduce((s,i)=>s+(i.qty * (i.sell||0)), 0);
+  const projectedProfit = totalSellValue - totalCost;
+  const newItemsCount = pipeline.confirmedItems.filter(i => i.isNew).length;
+  const updatedCount  = pipeline.confirmedItems.filter(i => !i.isNew).length;
+
+  const itemsList = pipeline.confirmedItems.map(it => `
+    <div class="intake-summary-row">
+      <div>
+        <div style="font-weight:600;color:var(--ink)">${it.name} ${it.isNew?'<span class="badge-gs badge-info" style="font-size:9px;margin-left:4px">NEW</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted)">${it.qty} ${it.unit} · sell ₹${(it.sell||0).toFixed(2)} · alert at ${it.alert||5}</div>
+      </div>
+      <div style="text-align:right;font-family:'DM Mono',monospace;font-size:12px">
+        <div style="color:var(--red)">Cost: ${fmt(it.totalCost||0)}</div>
+        <div style="color:var(--green)">Rev: ${fmt(it.qty * (it.sell||0))}</div>
+      </div>
+    </div>`).join('');
+
+  return `<div class="step-card">
+    <h3><span class="step-num">5</span> Review &amp; Finish</h3>
+    <p class="step-help">Almost done! Please check the details below. When you tap "Finish &amp; Add to Stock", everything will be saved and your inventory will be updated.</p>
+
+    <div class="intake-summary-block">
+      <h4><i class="bi bi-truck-front-fill"></i> Supplier</h4>
+      <div style="font-weight:600;font-size:14px">${pipeline.supplierName}</div>
+    </div>
+
+    <div class="intake-summary-block">
+      <h4><i class="bi bi-list-ul"></i> Items (${pipeline.confirmedItems.length})</h4>
+      ${itemsList}
+    </div>
+
+    <div class="intake-summary-block" style="background:linear-gradient(135deg,#dcfce7 0%,#f0fdf4 100%);border:1px solid #86efac">
+      <h4 style="color:var(--green)"><i class="bi bi-calculator"></i> Financial summary</h4>
+      <div class="intake-summary-row"><span class="lbl">Total spent on stock</span><span class="val" style="color:var(--red);font-family:'DM Mono',monospace">${fmt(totalCost)}</span></div>
+      <div class="intake-summary-row"><span class="lbl">Total selling value <span style="font-size:10px">(if all sold)</span></span><span class="val" style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalSellValue)}</span></div>
+      <div class="intake-summary-row" style="border-top:1px solid #86efac;margin-top:4px;padding-top:8px"><span class="lbl" style="font-weight:700">Potential profit</span><span class="val" style="color:${projectedProfit>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:14px">${fmt(projectedProfit)}</span></div>
+    </div>
+
+    <div class="intake-summary-block">
+      <h4><i class="bi bi-info-circle"></i> What happens when I finish</h4>
+      <div style="font-size:12px;color:var(--ink);line-height:1.6">
+        ${updatedCount>0?`✓ <strong>${updatedCount}</strong> existing item${updatedCount!==1?'s':''} will be restocked<br>`:''}
+        ${newItemsCount>0?`✓ <strong>${newItemsCount}</strong> new item${newItemsCount!==1?'s':''} will be added to inventory<br>`:''}
+        ✓ Selling prices and stock alerts will be saved<br>
+        ✓ A purchase record will be created for your reports<br>
+        ✓ A request record (status: completed) is logged for traceability
+      </div>
+    </div>
+
+    ${_renderPipelineNav({ nextLabel:'Finish &amp; Add to Stock', isFinish:true })}
+  </div>`;
+}
+
+// ─── SUCCESS screen ────────────────────────────────────────────────
+function _renderSuccessScreen() {
+  return `<div class="step-card intake-success">
+    <div class="intake-success-icon"><i class="bi bi-check-lg"></i></div>
+    <h3>All done!</h3>
+    <p>Stock has been added successfully and your inventory is up to date.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px">
+      <button class="btn-gs btn-primary-gs" onclick="pipelineStartNew()"><i class="bi bi-arrow-repeat"></i> Add Another Intake</button>
+      <button class="btn-gs btn-outline-gs" onclick="switchPage('inventory')"><i class="bi bi-boxes"></i> View Inventory</button>
+      <button class="btn-gs btn-outline-gs" onclick="switchPage('dashboard')"><i class="bi bi-grid-1x2-fill"></i> Go to Dashboard</button>
+    </div>
+  </div>`;
+}
+function pipelineStartNew() {
+  _clearPipelineDraft();
+  renderPipeline();
+}
+
+// ─── Navigation footer ─────────────────────────────────────────────
+function _renderPipelineNav({ backHidden, nextDisabled, nextLabel, isFinish }) {
+  const back = backHidden ? '' : `<button class="btn-gs btn-back" onclick="pipelineGoBack()"><i class="bi bi-arrow-left"></i> Back</button>`;
+  const counter = `<span class="step-counter">Step ${pipeline.currentStep} of 5</span>`;
+  const next = isFinish
+    ? `<button class="btn-gs btn-finish" onclick="pipelineFinish()"><i class="bi bi-check2-circle"></i> ${nextLabel}</button>`
+    : `<button class="btn-gs btn-next" ${nextDisabled?'disabled':''} onclick="pipelineGoNext()">${nextLabel} <i class="bi bi-arrow-right"></i></button>`;
+  return `<div class="pipeline-nav">${back}<div class="nav-spacer"></div>${counter}${next}</div>`;
+}
+function pipelineGoBack() {
+  if (pipeline.currentStep > 1) {
+    pipeline.currentStep--;
+    _savePipelineDraft();
+    renderPipeline();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+function pipelineGoNext() {
+  if (pipeline.currentStep === 1 && !pipeline.supplierId) {
+    toast('Please choose a supplier first', 'error');
+    return;
+  }
+  if (pipeline.currentStep === 2) {
+    pipeline.items = pipeline.items.filter(r => r.name && r.name.trim() && r.qty > 0);
+    if (pipeline.items.length === 0) { toast('Add at least one item with a name and quantity', 'error'); return; }
+    const names = pipeline.items.map(r => r.name.trim().toLowerCase());
+    const dup = names.find((n,i) => names.indexOf(n) !== i);
+    if (dup) { toast(`"${dup}" is listed twice — please combine or rename`, 'error'); return; }
+    pipeline.confirmedItems = [];
+  }
+  if (pipeline.currentStep === 3 && !_step3Valid()) {
+    toast('Please enter a received quantity for each item', 'error');
+    return;
+  }
+  if (pipeline.currentStep === 4 && !_step4Valid()) {
+    toast('Please set a selling price for every item', 'error');
+    return;
+  }
+  if (pipeline.currentStep < 5) {
+    pipeline.currentStep++;
+    _savePipelineDraft();
+    renderPipeline();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+function pipelineGoToStep(n) {
+  if (n > pipeline.currentStep) return;
+  pipeline.currentStep = n;
+  _savePipelineDraft();
+  renderPipeline();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── FINISH: commit everything via existing helpers ────────────────
+function pipelineFinish() {
+  if (!_step4Valid()) { toast('Set a selling price for every item before finishing', 'error'); return; }
+
+  const supId = pipeline.supplierId;
+  const sup   = state.suppliers.find(s => s.id === supId);
+  const supName = sup ? sup.name : pipeline.supplierName;
+  const today = new Date().toISOString().slice(0,10);
+
+  // 1) Create a completed supplier-request record for traceability
+  const reqId = 'REQ-' + Date.now();
+  const req = {
+    id:           reqId,
+    supplierId:   supId,
+    supplierName: supName,
+    date:         today,
+    deliveryDate: pipeline.deliveryDate || today,
+    notes:        pipeline.notes || 'Created via Stock Intake pipeline',
+    status:       'completed',
+    createdAt:    new Date().toISOString(),
+    confirmedAt:  new Date().toISOString(),
+    fromPipeline: true,
+    items: pipeline.confirmedItems.map(it => ({
+      name:    it.name,
+      qty:     it.qty,
+      unit:    it.unit,
+      estCost: it.totalCost || 0,
+      cat:     it.cat || 'Other'
+    }))
+  };
+  state.supplierRequests.push(req);
+
+  // 2) For each confirmed item: update or create inventory, then push purchase record
+  let newCount = 0, updCount = 0;
+  pipeline.confirmedItems.forEach((it, idx) => {
+    const unitCost = it.qty > 0 && it.totalCost > 0 ? parseFloat((it.totalCost/it.qty).toFixed(4)) : 0;
+
+    if (it.isNew) {
+      const newItem = {
+        id:           Math.floor(Date.now()) + idx + 1,
+        name:         it.name,
+        cat:          it.cat || 'Other',
+        qty:          it.qty,
+        unit:         it.unit,
+        cost:         unitCost,
+        sell:         it.sell || 0,
+        mrp:          it.mrp  || 0,
+        alert:        it.alert || 5,
+        expiry:       it.expiry || '',
+        barcode:      it.barcode || '',
+        notes:        it.notes || '',
+        stockId:      _generateStockId(),
+        supplierId:   supId,
+        refillHistory: [],
+        createdAt:    today
+      };
+      state.inventory.push(newItem);
+      _applyRefill(newItem, {
+        qty: 0, cost: unitCost, sell: it.sell, mrp: it.mrp,
+        supplierId: supId,
+        notes: `Added via Stock Intake pipeline (request ${reqId})`,
+        invoice: reqId, date: today
+      });
+      newCount++;
+    } else {
+      const existing = state.inventory.find(x => x.id === it.existingId);
+      if (existing) {
+        _applyRefill(existing, {
+          qty: it.qty,
+          cost: unitCost || existing.cost,
+          sell: it.sell || existing.sell,
+          mrp:  it.mrp  || existing.mrp,
+          supplierId: supId,
+          notes: `Refilled via Stock Intake pipeline (request ${reqId})`,
+          invoice: reqId,
+          date: today
+        });
+        existing.alert = it.alert || existing.alert;
+        if (it.expiry) existing.expiry = it.expiry;
+        if (it.barcode) existing.barcode = it.barcode;
+        updCount++;
+      }
+    }
+
+    state.purchases.push({
+      id:         Math.floor(Date.now()) + idx + 100,
+      supplierId: supId,
+      supplier:   supName,
+      item:       it.name,
+      qty:        it.qty,
+      unit:       it.unit,
+      cost:       it.totalCost || 0,
+      invoice:    reqId,
+      date:       today,
+      fromRequest: reqId,
+      fromPipeline: true
+    });
+  });
+
+  save();
+  _clearPipelineDraft();          // wipes draft AND resets pipeline
+  pipeline.finished = true;       // re-set so success screen renders
+  let msg = 'Stock added successfully!';
+  if (updCount) msg += ` ${updCount} restocked.`;
+  if (newCount) msg += ` ${newCount} new item${newCount!==1?'s':''} created.`;
+  toast(msg);
+  renderAll();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── Hook into renderAll & switchPage ─────────────────────────────
+(function(){
+  const _orig = window.renderAll;
+  if (_orig) {
+    window.renderAll = function() {
+      _orig.apply(this, arguments);
+      const page = document.getElementById('page-stockintake');
+      if (page && page.classList.contains('active')) renderPipeline();
+    };
+  }
+  const _origSwitch = window.switchPage;
+  if (_origSwitch) {
+    window.switchPage = function(id) {
+      _origSwitch.apply(this, arguments);
+      if (id === 'stockintake') renderPipeline();
+    };
+  }
+})();
+
+// ─── On initial load: preload any saved draft and render if visible ──
+document.addEventListener('DOMContentLoaded', function () {
+  const saved = _loadPipelineDraft();
+  if (saved) pipeline = saved;
+  setTimeout(()=>{
+    const page = document.getElementById('page-stockintake');
+    if (page && page.classList.contains('active')) renderPipeline();
+  }, 50);
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  CUSTOMERS / KHATA — CREDIT BOOK
+//  Layer over existing transactions; no business-logic duplication.
+//  ✱ Customer = { id, name, phone, address, notes, altPhone, createdAt, payments[] }
+//  ✱ Loan info lives on the transaction itself (paymentStatus, paidAmount, dueAmount, paymentHistory)
+//  ✱ Customer totals are DERIVED on demand — single source of truth = transactions.
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── ID helpers ──────────────────────────────────────────────────
+function _generateCustomerId() {
+  if (!state.customers) state.customers = [];
+  const maxId = state.customers.reduce((m,c)=>Math.max(m, c.id||0), 0);
+  return maxId + 1;
+}
+function _generatePaymentId() {
+  return Date.now() + Math.floor(Math.random()*1000);
+}
+
+// ─── Customer stats (derived from transactions) ──────────────────
+// This is the canonical accessor for any customer total/balance.
+function getCustomerStats(customerId) {
+  const cust = state.customers.find(c=>c.id===customerId);
+  if (!cust) return null;
+  const txns = (state.transactions||[]).filter(t=>t.customerId===customerId)
+                                       .slice()
+                                       .sort((a,b)=>(a.createdAt||a.date||'').localeCompare(b.createdAt||b.date||''));
+  let totalPurchases = 0, totalPaid = 0, totalDue = 0, loanCount = 0;
+  txns.forEach(t => {
+    totalPurchases += (t.totalRevenue || 0);
+    totalPaid      += (t.paidAmount  || 0);
+    totalDue       += (t.dueAmount   || 0);
+    if ((t.dueAmount || 0) > 0 || t.paymentStatus === 'loan' || t.paymentStatus === 'partial') loanCount++;
+  });
+  const lastTxn = txns.length > 0 ? txns[txns.length-1] : null;
+  // Oldest unpaid txn for overdue detection
+  const oldestUnpaid = txns.filter(t=>(t.dueAmount||0) > 0)
+                           .sort((a,b)=>(a.date||'').localeCompare(b.date||''))[0];
+  let oldestUnpaidDays = null;
+  if (oldestUnpaid) {
+    const d = new Date(oldestUnpaid.date);
+    oldestUnpaidDays = Math.floor((Date.now() - d.getTime()) / (1000*60*60*24));
+  }
+  return {
+    customer:     cust,
+    txns,
+    totalPurchases: parseFloat(totalPurchases.toFixed(2)),
+    totalPaid:      parseFloat(totalPaid.toFixed(2)),
+    totalDue:       parseFloat(totalDue.toFixed(2)),
+    txnCount:       txns.length,
+    loanCount,
+    lastTxnDate:    lastTxn ? lastTxn.date : null,
+    oldestUnpaidDays,
+    isOverdue:      oldestUnpaidDays !== null && oldestUnpaidDays >= 30
+  };
+}
+
+// ─── Payment status badge HTML (used in sales history) ───────────
+function _paymentStatusBadge(txn) {
+  if (!txn.customerId && txn.paymentStatus === 'paid') return ''; // walk-in cash: no badge clutter
+  const ps = txn.paymentStatus || 'paid';
+  if (ps === 'paid' && txn.customerId) {
+    return '<span class="payment-status-badge psb-paid"><i class="bi bi-check-circle-fill"></i> Paid</span>';
+  }
+  if (ps === 'paid') return ''; // anonymous cash
+  if (ps === 'loan') {
+    // Check overdue (30+ days)
+    const days = txn.date ? Math.floor((Date.now() - new Date(txn.date).getTime())/(1000*60*60*24)) : 0;
+    if (days >= 30) return '<span class="payment-status-badge psb-overdue"><i class="bi bi-exclamation-octagon-fill"></i> Overdue</span>';
+    return '<span class="payment-status-badge psb-loan"><i class="bi bi-journal-bookmark"></i> Loan</span>';
+  }
+  if (ps === 'partial') {
+    return '<span class="payment-status-badge psb-partial"><i class="bi bi-pie-chart-fill"></i> Partial</span>';
+  }
+  return '';
+}
+
+// ─── Customer dropdown for sales page ────────────────────────────
+function populateCustomerDropdown() {
+  const sel = document.getElementById('sale-customer-sel');
+  if (!sel) return;
+  const previousValue = sel.value;
+  const sorted = (state.customers||[]).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  sel.innerHTML = '<option value="">— Choose customer —</option>'
+    + sorted.map(c => {
+        const stats = getCustomerStats(c.id);
+        const dueLabel = stats && stats.totalDue > 0 ? ` (Due ${fmt(stats.totalDue)})` : '';
+        return `<option value="${c.id}">${c.name} — ${c.phone}${dueLabel}</option>`;
+      }).join('');
+  if (previousValue) sel.value = previousValue;
+}
+
+// ─── Loan toggle behaviour on Sales page ─────────────────────────
+function onLoanToggleChange() {
+  const cb   = document.getElementById('sale-is-loan');
+  const wrap = document.getElementById('loan-toggle-wrap');
+  if (!cb || !wrap) return;
+  if (cb.checked) {
+    wrap.classList.add('active');
+    populateCustomerDropdown();
+  } else {
+    wrap.classList.remove('active');
+    const sel = document.getElementById('sale-customer-sel'); if (sel) sel.value = '';
+    const paid = document.getElementById('sale-paid-now'); if (paid) paid.value = '';
+    const dueDate = document.getElementById('sale-due-date'); if (dueDate) dueDate.value = '';
+    document.getElementById('inline-cust-add').style.display = 'none';
+    document.getElementById('loan-preview').style.display = 'none';
+  }
+  updateLoanPreview();
+}
+
+function onSaleCustomerChange() { updateLoanPreview(); }
+
+function toggleInlineCustAdd() {
+  const box = document.getElementById('inline-cust-add');
+  if (!box) return;
+  const wasOpen = box.style.display === 'block';
+  box.style.display = wasOpen ? 'none' : 'block';
+  if (!wasOpen) {
+    document.getElementById('inline-cust-name').value = '';
+    document.getElementById('inline-cust-phone').value = '';
+    document.getElementById('inline-cust-address').value = '';
+    document.getElementById('inline-cust-notes').value = '';
+    setTimeout(()=>{ const f = document.getElementById('inline-cust-name'); if (f) f.focus(); }, 50);
+  }
+}
+
+function saveInlineCustomer() {
+  const name    = document.getElementById('inline-cust-name').value.trim();
+  const phone   = document.getElementById('inline-cust-phone').value.trim();
+  const address = document.getElementById('inline-cust-address').value.trim();
+  const notes   = document.getElementById('inline-cust-notes').value.trim();
+  if (!name)  { toast('Customer name is required','error'); return; }
+  if (!phone) { toast('Phone number is required','error'); return; }
+  // Soft duplicate-phone warning
+  const dupe = (state.customers||[]).find(c => c.phone === phone);
+  if (dupe) {
+    if (!confirm(`A customer "${dupe.name}" already exists with phone ${phone}. Add anyway as a separate record?`)) {
+      // Select existing instead
+      document.getElementById('sale-customer-sel').value = dupe.id;
+      toggleInlineCustAdd();
+      toast(`Selected existing: ${dupe.name}`);
+      updateLoanPreview();
+      return;
+    }
+  }
+  const cust = {
+    id: _generateCustomerId(),
+    name, phone, address, notes,
+    altPhone: '',
+    createdAt: new Date().toISOString(),
+    payments: []
+  };
+  state.customers.push(cust);
+  save();
+  populateCustomerDropdown();
+  document.getElementById('sale-customer-sel').value = cust.id;
+  toggleInlineCustAdd();
+  toast(`Added customer: ${name}`);
+  updateLoanPreview();
+}
+
+function updateLoanPreview() {
+  const cb = document.getElementById('sale-is-loan');
+  const preview = document.getElementById('loan-preview');
+  if (!cb || !preview) return;
+  if (!cb.checked) { preview.style.display = 'none'; return; }
+  // Compute current total from sale rows
+  let total = 0;
+  saleRows.forEach(r => {
+    if (!r.itemId || !r.qty) return;
+    const item = state.inventory.find(i=>i.id===r.itemId); if (!item) return;
+    const price = (r.overridePrice !== null && r.overridePrice !== '' && !isNaN(r.overridePrice))
+      ? parseFloat(r.overridePrice) : item.sell;
+    total += r.qty * price;
+  });
+  const paidNow = parseFloat(document.getElementById('sale-paid-now').value || 0) || 0;
+  const due     = Math.max(0, total - paidNow);
+  const sel     = document.getElementById('sale-customer-sel');
+  const cust    = sel && sel.value ? state.customers.find(c=>c.id===parseInt(sel.value)) : null;
+  const custDue = cust ? getCustomerStats(cust.id).totalDue : 0;
+  preview.style.display = 'block';
+  preview.innerHTML = `
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 16px">
+      <span>Bill total: <strong style="font-family:monospace">${fmt(total)}</strong></span>
+      <span>Paying now: <strong style="font-family:monospace;color:var(--green)">${fmt(paidNow)}</strong></span>
+      <span>Going to khata: <strong style="font-family:monospace;color:#b45309">${fmt(due)}</strong></span>
+    </div>
+    ${cust && custDue > 0 ? `<div style="margin-top:6px;color:#92400e;font-size:11px"><i class="bi bi-info-circle-fill"></i> ${cust.name} already has ${fmt(custDue)} pending. New total dues will be ${fmt(custDue + due)}.</div>` : ''}
+    ${!cust ? '<div style="margin-top:6px;color:#92400e;font-size:11px"><i class="bi bi-exclamation-triangle-fill"></i> Please select a customer.</div>' : ''}
+  `;
+}
+
+function resetLoanToggleUI() {
+  const cb = document.getElementById('sale-is-loan');
+  if (cb) cb.checked = false;
+  const wrap = document.getElementById('loan-toggle-wrap');
+  if (wrap) wrap.classList.remove('active');
+  const sel = document.getElementById('sale-customer-sel'); if (sel) sel.value = '';
+  const paid = document.getElementById('sale-paid-now'); if (paid) paid.value = '';
+  const dueDate = document.getElementById('sale-due-date'); if (dueDate) dueDate.value = '';
+  const box = document.getElementById('inline-cust-add'); if (box) box.style.display = 'none';
+  const pv = document.getElementById('loan-preview'); if (pv) pv.style.display = 'none';
+}
+
+// Hook into Sales row updates so loan preview stays live
+(function hookLoanPreview() {
+  const _origUpdateTotalBar = window.updateTotalBar;
+  if (typeof _origUpdateTotalBar === 'function') {
+    window.updateTotalBar = function() {
+      _origUpdateTotalBar.apply(this, arguments);
+      try { updateLoanPreview(); } catch(e){}
+    };
+  }
+})();
+
+// ─── Customers page renderers ────────────────────────────────────
+function renderCustomersKPIs() {
+  const el = document.getElementById('customers-kpis');
+  if (!el) return;
+  const stats = (state.customers||[]).map(c => getCustomerStats(c.id)).filter(Boolean);
+  const totalCustomers = stats.length;
+  const withDue = stats.filter(s=>s.totalDue > 0);
+  const totalReceivable = withDue.reduce((s,x)=>s+x.totalDue,0);
+  const overdue = stats.filter(s=>s.isOverdue);
+  const overdueAmt = overdue.reduce((s,x)=>s+x.totalDue,0);
+  const totalCollected = stats.reduce((s,x)=>s+x.totalPaid,0);
+  const totalCreditSales = stats.reduce((s,x)=>s+x.totalPurchases,0);
+  const collectionRate = totalCreditSales > 0
+    ? ((totalCollected/totalCreditSales)*100).toFixed(0)
+    : 100;
+
+  el.innerHTML = `<div class="cust-kpi-grid">
+    <div class="cust-kpi"><i class="bi bi-people-fill cust-kpi-icon" style="color:#7c3aed"></i>
+      <div class="cust-kpi-label">Total Customers</div>
+      <div class="cust-kpi-value" style="color:#7c3aed">${totalCustomers}</div>
+      <div class="cust-kpi-sub">${withDue.length} with pending dues</div>
+    </div>
+    <div class="cust-kpi" style="${totalReceivable>0?'border-color:#fde68a;background:#fffbeb':''}"><i class="bi bi-journal-bookmark-fill cust-kpi-icon" style="color:${totalReceivable>0?'#d97706':'#16a34a'}"></i>
+      <div class="cust-kpi-label">Outstanding Dues</div>
+      <div class="cust-kpi-value" style="color:${totalReceivable>0?'#d97706':'#16a34a'}">${fmt(totalReceivable)}</div>
+      <div class="cust-kpi-sub">${totalReceivable>0?'Total to collect':'All cleared ✓'}</div>
+    </div>
+    <div class="cust-kpi" style="${overdueAmt>0?'border-color:#fecaca;background:#fef2f2':''}"><i class="bi bi-exclamation-octagon-fill cust-kpi-icon" style="color:${overdueAmt>0?'#dc2626':'#94a3b8'}"></i>
+      <div class="cust-kpi-label">Overdue (30+ Days)</div>
+      <div class="cust-kpi-value" style="color:${overdueAmt>0?'#dc2626':'#94a3b8'}">${fmt(overdueAmt)}</div>
+      <div class="cust-kpi-sub">${overdue.length} customer${overdue.length!==1?'s':''}</div>
+    </div>
+    <div class="cust-kpi"><i class="bi bi-cash-coin cust-kpi-icon" style="color:#16a34a"></i>
+      <div class="cust-kpi-label">Total Collected</div>
+      <div class="cust-kpi-value" style="color:#16a34a">${fmt(totalCollected)}</div>
+      <div class="cust-kpi-sub">Cash from credit sales</div>
+    </div>
+    <div class="cust-kpi"><i class="bi bi-percent cust-kpi-icon" style="color:#2563eb"></i>
+      <div class="cust-kpi-label">Collection Rate</div>
+      <div class="cust-kpi-value" style="color:#2563eb">${collectionRate}%</div>
+      <div class="cust-kpi-sub">Paid / Credit sales</div>
+    </div>
+  </div>`;
+}
+
+function renderCustomerAlerts() {
+  const el = document.getElementById('customers-alerts');
+  if (!el) return;
+  const stats = (state.customers||[]).map(c => getCustomerStats(c.id)).filter(Boolean);
+  const overdue = stats.filter(s=>s.isOverdue).sort((a,b)=>b.oldestUnpaidDays-a.oldestUnpaidDays);
+  const highDue = stats.filter(s=>!s.isOverdue && s.totalDue >= 5000).sort((a,b)=>b.totalDue-a.totalDue);
+  let html = '';
+  if (overdue.length > 0) {
+    html += overdue.slice(0,3).map(s => `
+      <div class="alert-due-card overdue">
+        <i class="bi bi-exclamation-octagon-fill ico"></i>
+        <div style="flex:1">
+          <strong>${s.customer.name}</strong> — ${fmt(s.totalDue)} pending for <strong>${s.oldestUnpaidDays} days</strong>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${s.customer.phone}${s.customer.address?' · '+s.customer.address:''}</div>
+        </div>
+        <button class="btn-gs btn-sm-gs" style="background:#16a34a;color:#fff;font-size:11px;padding:5px 10px" onclick="openRepaymentModal(${s.customer.id})"><i class="bi bi-cash-coin"></i> Record</button>
+      </div>`).join('');
+  }
+  if (highDue.length > 0) {
+    html += highDue.slice(0,2).map(s => `
+      <div class="alert-due-card">
+        <i class="bi bi-exclamation-triangle-fill ico"></i>
+        <div style="flex:1">
+          <strong>${s.customer.name}</strong> has a high balance: ${fmt(s.totalDue)}
+        </div>
+        <button class="btn-gs btn-outline-gs btn-sm-gs" style="font-size:11px;padding:5px 10px" onclick="openCustomerDetail(${s.customer.id})">View</button>
+      </div>`).join('');
+  }
+  el.innerHTML = html;
+}
+
+function renderCustomersList() {
+  const el = document.getElementById('customers-list');
+  if (!el) return;
+  if ((state.customers||[]).length === 0) {
+    el.innerHTML = '<div class="empty-state"><i class="bi bi-people"></i>No customers yet. Add a customer when recording a loan/credit sale, or use the Add Customer button above.</div>';
+    return;
+  }
+  const q = (document.getElementById('cust-search')?.value || '').trim().toLowerCase();
+  const filter = document.getElementById('cust-filter')?.value || 'all';
+  const sort = document.getElementById('cust-sort')?.value || 'due-desc';
+  let stats = state.customers.map(c => getCustomerStats(c.id)).filter(Boolean);
+  if (q) {
+    stats = stats.filter(s => s.customer.name.toLowerCase().includes(q) ||
+                              (s.customer.phone||'').includes(q) ||
+                              (s.customer.address||'').toLowerCase().includes(q));
+  }
+  if (filter === 'due')     stats = stats.filter(s => s.totalDue > 0);
+  if (filter === 'overdue') stats = stats.filter(s => s.isOverdue);
+  if (filter === 'clean')   stats = stats.filter(s => s.totalDue <= 0.01);
+  switch (sort) {
+    case 'name':        stats.sort((a,b)=>a.customer.name.localeCompare(b.customer.name)); break;
+    case 'recent':      stats.sort((a,b)=>(b.lastTxnDate||'').localeCompare(a.lastTxnDate||'')); break;
+    case 'spent-desc':  stats.sort((a,b)=>b.totalPurchases-a.totalPurchases); break;
+    case 'due-desc':
+    default:            stats.sort((a,b)=>b.totalDue-a.totalDue); break;
+  }
+  if (stats.length === 0) {
+    el.innerHTML = '<div class="empty-state"><i class="bi bi-search"></i>No customers match your filter/search.</div>';
+    return;
+  }
+  el.innerHTML = stats.map(s => {
+    const c = s.customer;
+    const initials = (c.name||'?').split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase();
+    const cardClass = s.isOverdue ? 'overdue' : (s.totalDue > 0 ? 'has-due' : 'clean');
+    const duePillColor = s.isOverdue ? 'var(--red)' : (s.totalDue > 0 ? 'var(--amber)' : 'var(--green)');
+    return `<div class="cust-card ${cardClass}" onclick="openCustomerDetail(${c.id})">
+      <div class="cust-card-top">
+        <div class="cust-avatar">${initials}</div>
+        <div style="flex:1;min-width:0">
+          <div class="cust-name">${c.name}</div>
+          <div class="cust-meta">
+            <span><i class="bi bi-telephone"></i> ${c.phone||'—'}</span>
+            ${c.address?`<span><i class="bi bi-geo-alt"></i> ${c.address}</span>`:''}
+            ${s.lastTxnDate?`<span><i class="bi bi-clock-history"></i> Last: ${s.lastTxnDate}</span>`:''}
+          </div>
+          <div class="cust-stats-row">
+            <span><i class="bi bi-cart3"></i> ${s.txnCount} txn${s.txnCount!==1?'s':''}</span>
+            <span><i class="bi bi-graph-up"></i> Spent: ${fmt(s.totalPurchases)}</span>
+            <span><i class="bi bi-cash"></i> Paid: ${fmt(s.totalPaid)}</span>
+            ${s.isOverdue?`<span style="color:var(--red);font-weight:600"><i class="bi bi-exclamation-octagon-fill"></i> Overdue ${s.oldestUnpaidDays}d</span>`:''}
+          </div>
+        </div>
+        <div class="cust-due-pill">
+          <div class="lbl">Pending</div>
+          <div class="amt" style="color:${duePillColor}">${fmt(s.totalDue)}</div>
+        </div>
+      </div>
+      <div class="cust-card-actions" onclick="event.stopPropagation()">
+        <button class="btn-gs btn-sm-gs btn-outline-gs" style="font-size:11px;padding:5px 10px" onclick="openCustomerDetail(${c.id})"><i class="bi bi-journal-text"></i> Ledger</button>
+        ${s.totalDue > 0 ? `<button class="btn-gs btn-sm-gs" style="background:#16a34a;color:#fff;font-size:11px;padding:5px 10px" onclick="openRepaymentModal(${c.id})"><i class="bi bi-cash-coin"></i> Record Payment</button>` : ''}
+        ${c.phone ? `<a class="btn-gs btn-sm-gs btn-outline-gs" style="font-size:11px;padding:5px 10px" href="tel:${c.phone}"><i class="bi bi-telephone-fill"></i> Call</a>` : ''}
+        ${c.phone ? `<a class="btn-gs btn-sm-gs btn-outline-gs" style="font-size:11px;padding:5px 10px;color:#25D366;border-color:#25D366" href="https://wa.me/${(c.phone||'').replace(/\D/g,'')}" target="_blank"><i class="bi bi-whatsapp"></i></a>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateCustomerNavBadges() {
+  const stats = (state.customers||[]).map(c => getCustomerStats(c.id)).filter(Boolean);
+  const dueCount = stats.filter(s=>s.totalDue > 0).length;
+  const badge = document.getElementById('nav-cust-due-badge');
+  if (badge) {
+    if (dueCount > 0) { badge.textContent = dueCount; badge.style.display = 'inline-block'; }
+    else              { badge.style.display = 'none'; }
+  }
+  const dot = document.getElementById('bnav-cust-due-dot');
+  if (dot) dot.style.display = dueCount > 0 ? 'block' : 'none';
+}
+
+// ─── Customer detail / Ledger modal ──────────────────────────────
+function openCustomerDetail(customerId) {
+  const stats = getCustomerStats(customerId);
+  if (!stats) { toast('Customer not found','error'); return; }
+  const c = stats.customer;
+  const old = document.getElementById('cust-detail-overlay'); if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'cust-detail-overlay';
+  overlay.className = 'cust-detail-modal-overlay';
+
+  // Build ledger rows. Each row is either a debit (sale) or a credit (payment).
+  // Sort all events chronologically and compute running balance.
+  const events = [];
+  stats.txns.forEach(t => {
+    events.push({
+      type:   'sale',
+      date:   t.date,
+      label:  `Sale — ${t.billNo||t.txnId} (${t.itemCount} items)`,
+      detail: t.items.map(i=>i.itemName).slice(0,3).join(', ') + (t.items.length>3?` +${t.items.length-3} more`:''),
+      debit:  t.totalRevenue,
+      credit: 0,
+      txnId:  t.txnId
+    });
+    (t.paymentHistory||[]).forEach(p => {
+      events.push({
+        type:   'payment',
+        date:   p.date || t.date,
+        label:  p.note || 'Payment received',
+        detail: `Method: ${p.method||'cash'}${p.note?' — '+p.note:''}`,
+        debit:  0,
+        credit: p.amount,
+        txnId:  t.txnId,
+        paymentId: p.id
+      });
+    });
+  });
+  // Standalone repayments (not tied to one txn) — applied across multiple
+  (c.payments||[]).forEach(p => {
+    events.push({
+      type:   'payment',
+      date:   p.date,
+      label:  p.note || 'General payment',
+      detail: `Applied to ${p.appliedTo?p.appliedTo.length+' bills':'multiple bills'}`,
+      debit:  0,
+      credit: p.amount,
+      paymentId: p.id,
+      standalone: true
+    });
+  });
+  // Sort by date, then by sale-before-payment within the same date
+  events.sort((a,b)=>{
+    const d = (a.date||'').localeCompare(b.date||'');
+    if (d !== 0) return d;
+    return a.type === 'sale' ? -1 : 1;
+  });
+  let running = 0;
+  const ledgerRows = events.map(e => {
+    running += e.debit - e.credit;
+    return `<div class="ledger-row ${e.type==='payment'?'payment':''}">
+      <div class="lr-cell" data-lbl="Date">${e.date||'—'}</div>
+      <div class="lr-cell" data-lbl="Description">
+        <strong>${e.label}</strong>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${e.detail||''}</div>
+      </div>
+      <div class="lr-cell lr-amt debit" data-lbl="Bill">${e.debit>0?fmt(e.debit):'—'}</div>
+      <div class="lr-cell lr-amt credit" data-lbl="Paid">${e.credit>0?fmt(e.credit):'—'}</div>
+      <div class="lr-cell lr-bal" data-lbl="Balance" style="color:${running>0?'var(--amber)':'var(--green)'}">${fmt(running)}</div>
+    </div>`;
+  }).join('');
+
+  const initials = (c.name||'?').split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase();
+
+  overlay.innerHTML = `
+    <div class="cust-detail-modal">
+      <div class="cust-detail-header">
+        <div class="cust-avatar">${initials}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:18px;font-weight:700">${c.name}</div>
+          <div style="font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:2px">
+            <span><i class="bi bi-telephone"></i> ${c.phone||'—'}</span>
+            ${c.altPhone?`<span><i class="bi bi-telephone-plus"></i> ${c.altPhone}</span>`:''}
+            ${c.address?`<span><i class="bi bi-geo-alt"></i> ${c.address}</span>`:''}
+          </div>
+          ${c.notes?`<div style="font-size:11px;color:var(--muted);margin-top:4px;font-style:italic">"${c.notes}"</div>`:''}
+        </div>
+        <button class="btn-gs btn-outline-gs btn-sm-gs" onclick="document.getElementById('cust-detail-overlay').remove()" style="font-size:14px;padding:5px 10px"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="cust-detail-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px">
+          <div style="background:#f1f5f9;padding:10px;border-radius:8px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:600">Total Purchases</div><div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700">${fmt(stats.totalPurchases)}</div></div>
+          <div style="background:#dcfce7;padding:10px;border-radius:8px"><div style="font-size:10px;color:#15803d;text-transform:uppercase;font-weight:600">Total Paid</div><div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:#15803d">${fmt(stats.totalPaid)}</div></div>
+          <div style="background:${stats.totalDue>0?'#fef3c7':'#dcfce7'};padding:10px;border-radius:8px"><div style="font-size:10px;color:${stats.totalDue>0?'#92400e':'#15803d'};text-transform:uppercase;font-weight:600">Pending Balance</div><div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:${stats.totalDue>0?'#92400e':'#15803d'}">${fmt(stats.totalDue)}</div></div>
+          <div style="background:#f1f5f9;padding:10px;border-radius:8px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:600">Transactions</div><div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700">${stats.txnCount}</div></div>
+        </div>
+        ${stats.isOverdue?`<div class="alert-due-card overdue" style="margin-bottom:14px"><i class="bi bi-exclamation-octagon-fill ico"></i><div><strong>Overdue ${stats.oldestUnpaidDays} days</strong> — oldest unpaid bill</div></div>`:''}
+        <h6 style="font-size:13px;font-weight:600;margin:8px 0;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)"><i class="bi bi-journal-text"></i> Ledger / Khata History</h6>
+        ${events.length === 0 ? '<div class="empty-state"><i class="bi bi-journal"></i>No transactions yet for this customer.</div>' : `
+          <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
+            <div class="ledger-row header">
+              <div>Date</div><div>Description</div><div style="text-align:right">Bill ₹</div><div style="text-align:right">Paid ₹</div><div style="text-align:right">Balance ₹</div>
+            </div>
+            ${ledgerRows}
+          </div>
+        `}
+      </div>
+      <div class="cust-detail-footer">
+        ${stats.totalDue > 0 ? `<button class="btn-gs" style="background:#16a34a;color:#fff;flex:1" onclick="openRepaymentModal(${c.id})"><i class="bi bi-cash-coin"></i> Record Payment</button>` : ''}
+        <button class="btn-gs btn-outline-gs" onclick="openEditCustomerModal(${c.id})"><i class="bi bi-pencil"></i> Edit</button>
+        ${c.phone?`<a class="btn-gs btn-outline-gs" href="tel:${c.phone}"><i class="bi bi-telephone-fill"></i></a>`:''}
+        ${c.phone?`<a class="btn-gs btn-outline-gs" style="color:#25D366;border-color:#25D366" href="https://wa.me/${(c.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent('Reminder: You have a pending balance of '+fmt(stats.totalDue)+' at our shop.')}" target="_blank"><i class="bi bi-whatsapp"></i></a>`:''}
+        <button class="btn-gs btn-danger-gs" onclick="deleteCustomer(${c.id})"><i class="bi bi-trash3"></i></button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ─── Repayment modal — record a payment against a customer ───────
+// Payment is applied oldest-first to outstanding transactions (FIFO).
+function openRepaymentModal(customerId, preferTxnId) {
+  const stats = getCustomerStats(customerId);
+  if (!stats) { toast('Customer not found','error'); return; }
+  if (stats.totalDue <= 0) { toast('No pending dues for this customer'); return; }
+  const old = document.getElementById('repay-overlay'); if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'repay-overlay';
+  overlay.className = 'repay-modal-overlay';
+  const today = new Date().toISOString().slice(0,10);
+  overlay.innerHTML = `
+    <div class="repay-modal">
+      <div class="repay-modal-head">
+        <h3><i class="bi bi-cash-coin"></i> Record Payment</h3>
+        <div style="font-size:12px;opacity:.9">${stats.customer.name}</div>
+        <div class="due-amt">Pending: ${fmt(stats.totalDue)}</div>
+      </div>
+      <div class="repay-modal-body">
+        <label class="form-label">Amount received <span style="color:var(--red)">*</span></label>
+        <input type="number" id="repay-amount" class="form-control" placeholder="0.00" step="0.01" min="0.01" inputmode="decimal" autofocus>
+        <div class="repay-quick-btns">
+          <button type="button" class="repay-quick-btn" onclick="document.getElementById('repay-amount').value='${stats.totalDue.toFixed(2)}'">Full ${fmt(stats.totalDue)}</button>
+          ${stats.totalDue > 500 ? `<button type="button" class="repay-quick-btn" onclick="document.getElementById('repay-amount').value='${(stats.totalDue/2).toFixed(2)}'">Half</button>` : ''}
+          ${[100,500,1000,2000].filter(v=>v <= stats.totalDue).map(v=>`<button type="button" class="repay-quick-btn" onclick="document.getElementById('repay-amount').value='${v}'">₹${v}</button>`).join('')}
+        </div>
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div>
+            <label class="form-label">Date</label>
+            <input type="date" id="repay-date" class="form-control" value="${today}">
+          </div>
+          <div>
+            <label class="form-label">Method</label>
+            <select id="repay-method" class="form-select">
+              <option value="cash">Cash</option>
+              <option value="upi">UPI</option>
+              <option value="bank">Bank Transfer</option>
+              <option value="cheque">Cheque</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <label class="form-label" style="margin-top:10px">Note <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <input type="text" id="repay-note" class="form-control" placeholder="e.g. paid in full, partial">
+        <div style="margin-top:10px;padding:10px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;font-size:11px;color:#15803d">
+          <i class="bi bi-info-circle-fill"></i> Payment will be applied to oldest unpaid bills first (FIFO).
+        </div>
+      </div>
+      <div class="repay-modal-footer">
+        <button class="btn-gs btn-outline-gs" style="flex:1" onclick="document.getElementById('repay-overlay').remove()">Cancel</button>
+        <button class="btn-gs btn-primary-gs" style="flex:2;background:#16a34a;border-color:#16a34a" onclick="confirmRepayment(${customerId}${preferTxnId?`, '${preferTxnId}'`:''})"><i class="bi bi-check2-circle"></i> Record Payment</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function confirmRepayment(customerId, preferTxnId) {
+  const amtRaw = document.getElementById('repay-amount').value;
+  const amt    = parseFloat(amtRaw);
+  if (!amt || amt <= 0) { toast('Enter a valid amount','error'); return; }
+  const stats = getCustomerStats(customerId);
+  if (!stats) { toast('Customer not found','error'); return; }
+  if (amt > stats.totalDue + 0.01) {
+    if (!confirm(`Amount ${fmt(amt)} exceeds pending ${fmt(stats.totalDue)}. Record as overpayment / advance?`)) return;
+  }
+  const date   = document.getElementById('repay-date').value || new Date().toISOString().slice(0,10);
+  const method = document.getElementById('repay-method').value;
+  const note   = document.getElementById('repay-note').value.trim();
+
+  // Apply payment FIFO across unpaid txns (oldest first), OR to preferTxnId first if given
+  let remaining = amt;
+  const unpaid = stats.txns
+    .filter(t => (t.dueAmount||0) > 0)
+    .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+  // If a specific txn was preferred (clicked Record Payment on a specific row), apply to it first
+  if (preferTxnId) {
+    const idx = unpaid.findIndex(t => t.txnId === preferTxnId);
+    if (idx > 0) { const [pref] = unpaid.splice(idx,1); unpaid.unshift(pref); }
+  }
+
+  const appliedTo = [];
+  unpaid.forEach(t => {
+    if (remaining <= 0.001) return;
+    const apply = Math.min(t.dueAmount, remaining);
+    t.dueAmount   = parseFloat((t.dueAmount - apply).toFixed(2));
+    t.paidAmount  = parseFloat((t.paidAmount + apply).toFixed(2));
+    t.paymentStatus = (t.dueAmount <= 0.01) ? 'paid' : 'partial';
+    t.paymentHistory = t.paymentHistory || [];
+    t.paymentHistory.push({
+      id:         _generatePaymentId(),
+      date,
+      amount:     parseFloat(apply.toFixed(2)),
+      method,
+      note:       note || 'Repayment',
+      recordedAt: new Date().toISOString()
+    });
+    appliedTo.push({ txnId: t.txnId, amount: parseFloat(apply.toFixed(2)) });
+    remaining = parseFloat((remaining - apply).toFixed(2));
+  });
+
+  // If anything remains (overpayment), record it as customer advance
+  if (remaining > 0.01) {
+    const cust = state.customers.find(c=>c.id===customerId);
+    if (cust) {
+      cust.payments = cust.payments || [];
+      cust.payments.push({
+        id:        _generatePaymentId(),
+        date,
+        amount:    remaining,
+        method,
+        note:      (note || 'Advance / overpayment') + ' (unapplied)',
+        appliedTo: []
+      });
+    }
+  }
+
+  save();
+  document.getElementById('repay-overlay')?.remove();
+  toast(`Payment of ${fmt(amt)} recorded for ${stats.customer.name}`);
+  renderAll();
+  // Re-open the customer detail if it was open
+  setTimeout(()=>{
+    if (document.getElementById('page-customers').classList.contains('active')) {
+      // already re-rendered
+    }
+  }, 50);
+}
+
+// ─── Add / Edit customer modals ──────────────────────────────────
+function openCustomerCreateModal() {
+  _openCustomerFormModal(null);
+}
+function openEditCustomerModal(customerId) {
+  const c = state.customers.find(x=>x.id===customerId);
+  if (!c) { toast('Customer not found','error'); return; }
+  _openCustomerFormModal(c);
+}
+function _openCustomerFormModal(existing) {
+  const old = document.getElementById('cust-form-overlay'); if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'cust-form-overlay';
+  overlay.className = 'repay-modal-overlay';
+  const e = existing || {};
+  overlay.innerHTML = `
+    <div class="repay-modal" style="max-width:500px">
+      <div class="repay-modal-head" style="background:linear-gradient(135deg,#7c3aed,#a855f7)">
+        <h3><i class="bi bi-person-${existing?'gear':'plus-fill'}"></i> ${existing?'Edit':'Add'} Customer</h3>
+      </div>
+      <div class="repay-modal-body">
+        <div class="row g-2">
+          <div class="col-12"><label class="form-label">Name <span style="color:var(--red)">*</span></label><input type="text" class="form-control" id="cf-name" value="${(e.name||'').replace(/"/g,'&quot;')}" placeholder="Customer name"></div>
+          <div class="col-12 col-sm-6"><label class="form-label">Phone <span style="color:var(--red)">*</span></label><input type="tel" class="form-control" id="cf-phone" value="${e.phone||''}" placeholder="10-digit phone" inputmode="tel"></div>
+          <div class="col-12 col-sm-6"><label class="form-label">Alt. phone <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="tel" class="form-control" id="cf-altphone" value="${e.altPhone||''}" placeholder="Optional" inputmode="tel"></div>
+          <div class="col-12"><label class="form-label">Address <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="text" class="form-control" id="cf-address" value="${(e.address||'').replace(/"/g,'&quot;')}" placeholder="Locality / village / landmark"></div>
+          <div class="col-12"><label class="form-label">Notes <span style="color:var(--muted);font-weight:400">(optional)</span></label><input type="text" class="form-control" id="cf-notes" value="${(e.notes||'').replace(/"/g,'&quot;')}" placeholder="e.g. trusted regular, pays weekly on Fridays"></div>
+        </div>
+      </div>
+      <div class="repay-modal-footer">
+        <button class="btn-gs btn-outline-gs" style="flex:1" onclick="document.getElementById('cust-form-overlay').remove()">Cancel</button>
+        <button class="btn-gs btn-primary-gs" style="flex:2" onclick="saveCustomerForm(${existing?existing.id:'null'})"><i class="bi bi-check2"></i> ${existing?'Save Changes':'Add Customer'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', ev => { if (ev.target === overlay) overlay.remove(); });
+  setTimeout(()=>document.getElementById('cf-name')?.focus(), 50);
+}
+
+function saveCustomerForm(customerId) {
+  const name     = document.getElementById('cf-name').value.trim();
+  const phone    = document.getElementById('cf-phone').value.trim();
+  const altPhone = document.getElementById('cf-altphone').value.trim();
+  const address  = document.getElementById('cf-address').value.trim();
+  const notes    = document.getElementById('cf-notes').value.trim();
+  if (!name)  { toast('Name is required','error'); return; }
+  if (!phone) { toast('Phone is required','error'); return; }
+  if (customerId) {
+    const c = state.customers.find(x=>x.id===customerId);
+    if (!c) { toast('Customer not found','error'); return; }
+    c.name = name; c.phone = phone; c.altPhone = altPhone; c.address = address; c.notes = notes;
+    save(); toast(`Updated: ${name}`);
+  } else {
+    const dupe = state.customers.find(c => c.phone === phone);
+    if (dupe) {
+      if (!confirm(`A customer "${dupe.name}" already exists with phone ${phone}. Add anyway as separate?`)) return;
+    }
+    state.customers.push({
+      id: _generateCustomerId(),
+      name, phone, altPhone, address, notes,
+      createdAt: new Date().toISOString(),
+      payments: []
+    });
+    save(); toast(`Added: ${name}`);
+  }
+  document.getElementById('cust-form-overlay')?.remove();
+  // Refresh visible customer detail if open
+  const detailOverlay = document.getElementById('cust-detail-overlay');
+  if (detailOverlay && customerId) { detailOverlay.remove(); openCustomerDetail(customerId); }
+  renderAll();
+}
+
+function deleteCustomer(customerId) {
+  const c = state.customers.find(x=>x.id===customerId);
+  if (!c) return;
+  const stats = getCustomerStats(customerId);
+  let warn = `Delete customer "${c.name}"?`;
+  if (stats.txnCount > 0) {
+    warn += `\n\nThis customer has ${stats.txnCount} transaction(s) on record.\nThose transactions will be KEPT, but will no longer be linked to this customer.`;
+    if (stats.totalDue > 0) {
+      warn += `\n\n⚠ PENDING DUES: ${fmt(stats.totalDue)} will become orphaned (unattributed).`;
+    }
+  }
+  if (!confirm(warn)) return;
+  // Detach customer from transactions (preserve sales data)
+  state.transactions.forEach(t => {
+    if (t.customerId === customerId) {
+      t.customerName = (t.customerName || c.name) + ' (deleted)';
+      t.customerId   = null;
+    }
+  });
+  state.customers = state.customers.filter(x => x.id !== customerId);
+  save();
+  document.getElementById('cust-detail-overlay')?.remove();
+  toast(`Deleted customer: ${c.name}`);
+  renderAll();
+}
+
+// ─── Hook switchPage to re-render customer page when shown ───────
+(function hookCustomerSwitchPage() {
+  const _origSwitch = window.switchPage;
+  if (typeof _origSwitch === 'function') {
+    window.switchPage = function(id) {
+      _origSwitch.apply(this, arguments);
+      if (id === 'customers') {
+        renderCustomersKPIs();
+        renderCustomerAlerts();
+        renderCustomersList();
+      }
+    };
+  }
+})();
+
+// ─── On initial load: refresh customer-related UI ────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  setTimeout(()=>{
+    try {
+      populateCustomerDropdown();
+      updateCustomerNavBadges();
+      if (document.getElementById('page-customers')?.classList.contains('active')) {
+        renderCustomersKPIs(); renderCustomerAlerts(); renderCustomersList();
+      }
+    } catch(e){ /* render-all will catch up shortly */ }
+  }, 80);
+});
+
 </script>
 </body>
 </html>
